@@ -1,4 +1,3 @@
-// src/hooks/useWallet.ts
 import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain } from 'wagmi'
 import { useEffect } from 'react'
 import toast from 'react-hot-toast'

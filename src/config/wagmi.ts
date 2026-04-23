@@ -15,11 +15,12 @@ export const config = createConfig({
     walletConnect({
       projectId,
       showQrModal: true,
+      // Minimal metadata to avoid mobile errors
       metadata: {
         name: 'Swipass',
-        description: 'Universal cross-chain intent & execution platform',
-        url: typeof window !== 'undefined' ? window.location.origin : 'https://swipass.xyz',
-        icons: ['https://swipass.xyz/icon.png'],
+        description: 'Cross-chain intent execution',
+        url: typeof window !== 'undefined' ? window.location.origin : 'https://swipass.com',
+        icons: [], // Empty array prevents icon loading errors
       },
     }),
   ],

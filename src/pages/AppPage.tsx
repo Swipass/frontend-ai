@@ -12,7 +12,9 @@ import { useVoiceInput } from '../hooks/useVoiceInput'
 // ─── Constants ────────────────────────────────────────────────
 const QUICK_COMMANDS = [
   'Bridge 1 ETH from Ethereum to Polygon',
+  'Swap 100 USDC for WETH on Arbitrum',
   'Send 50 DAI from Base to Optimism',
+  'Move all USDT from Optimism to mainnet',
   'Bridge 0.5 ETH from Ethereum to Avalanche',
 ]
 
