@@ -1,6 +1,6 @@
 // src/pages/DocsPage.tsx
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 
 const LANGS = ['JavaScript', 'Python', 'Go', 'Rust', 'cURL']
 
@@ -233,14 +233,17 @@ function CodeBlock({ code, lang }: { code: string; lang: string }) {
   const [copied, setCopied] = useState(false)
   const copy = () => { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000) }
   return (
-    <div style={{ position:'relative', background:'var(--gray-50)', border:'1px solid var(--gray-300)', borderRadius:8, overflow:'hidden' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0.5rem 1rem', background:'var(--gray-200)', borderBottom:'1px solid var(--gray-300)' }}>
-        <span style={{ fontSize:'0.65rem', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gray-500)' }}>{lang}</span>
-        <button onClick={copy} style={{ background:'none', border:'none', fontSize:'0.65rem', color:'var(--gray-500)', cursor:'none', fontFamily:"'DM Mono',monospace", letterSpacing:'0.06em', textTransform:'uppercase' }}>
+    <div className="bg-deepest-dark border border-dark-grey-3 rounded-lg overflow-hidden">
+      <div className="flex justify-between items-center px-3 py-2 bg-dark-grey-2 border-b border-dark-grey-3">
+        <span className="text-xs uppercase tracking-wide text-light-grey-1">{lang}</span>
+        <button
+          onClick={copy}
+          className="bg-none border-none text-xs text-light-grey-1 hover:text-light-grey-3 font-mono uppercase tracking-wide"
+        >
           {copied ? '✓ Copied' : 'Copy'}
         </button>
       </div>
-      <pre style={{ padding:'1.25rem', fontFamily:"'DM Mono',monospace", fontSize:'0.78rem', color:'var(--gray-600)', lineHeight:1.7, margin:0, overflow:'auto', maxHeight:400 }}>
+      <pre className="p-4 font-mono text-xs md:text-sm text-light-grey-2 leading-relaxed overflow-x-auto max-h-96">
         <code>{code}</code>
       </pre>
     </div>
@@ -251,10 +254,17 @@ function ExampleTabs({ examples }: { examples: Record<string, string> }) {
   const [activeLang, setActiveLang] = useState('JavaScript')
   return (
     <div>
-      <div style={{ display:'flex', gap:0, borderBottom:'1px solid var(--gray-300)', marginBottom:'1rem' }}>
+      <div className="flex flex-wrap border-b border-dark-grey-3 mb-4">
         {LANGS.map(lang => (
-          <button key={lang} onClick={() => setActiveLang(lang)}
-            style={{ padding:'0.5rem 1rem', fontFamily:"'DM Mono',monospace", fontSize:'0.72rem', letterSpacing:'0.06em', textTransform:'uppercase', color: activeLang===lang ? 'var(--gray-900)' : 'var(--gray-500)', background:'none', border:'none', borderBottom: activeLang===lang ? '2px solid var(--gray-700)' : '2px solid transparent', cursor:'none', transition:'all 0.2s', marginBottom:-1 }}>
+          <button
+            key={lang}
+            onClick={() => setActiveLang(lang)}
+            className={`px-3 py-2 font-mono text-xs uppercase tracking-wide transition-colors cursor-none ${
+              activeLang === lang
+                ? 'text-almost-white border-b-2 border-light-grey-3'
+                : 'text-light-grey-1 border-b-2 border-transparent hover:text-light-grey-3'
+            }`}
+          >
             {lang}
           </button>
         ))}
@@ -265,161 +275,230 @@ function ExampleTabs({ examples }: { examples: Record<string, string> }) {
 }
 
 export default function DocsPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('introduction')
+  const location = useLocation()
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [location.pathname])
+
+  // Update active section based on scroll (simplified: just set from hash)
+  useEffect(() => {
+    const hash = window.location.hash.slice(1)
+    if (hash && DOC_SECTIONS.some(s => s.id === hash)) {
+      setActiveSection(hash)
+    }
+  }, [])
+
+  const scrollToSection = (id: string) => {
+    setActiveSection(id)
+    setMobileMenuOpen(false)
+    const el = document.getElementById(id)
+    if (el) el.scrollIntoView({ behavior: 'smooth' })
+  }
 
   return (
-    <div style={{ minHeight:'100vh', background:'var(--gray-50)', fontFamily:"'DM Mono',monospace" }}>
+    <div className="min-h-screen bg-deepest-dark font-mono">
       {/* Header */}
-      <header style={{ position:'sticky', top:0, background:'rgba(10,10,10,0.85)', backdropFilter:'blur(20px)', borderBottom:'1px solid var(--gray-300)', padding:'0 2rem', height:56, display:'flex', alignItems:'center', justifyContent:'space-between', zIndex:100 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'1.5rem' }}>
-          <Link to="/" style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontFamily:"'Syne',sans-serif", fontSize:'1rem', fontWeight:800, color:'var(--gray-900)', letterSpacing:'-0.03em' }}>
-            <div style={{ width:24, height:24, border:'1.5px solid var(--gray-500)', borderRadius:5, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.55rem', color:'var(--gray-500)' }}>SW</div>
+      <header className="sticky top-0 z-30 bg-deepest-dark/85 backdrop-blur-md border-b border-dark-grey-3 px-4 sm:px-6 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="flex items-center gap-2 font-display text-xl font-extrabold text-almost-white tracking-tighter">
             Swipass
           </Link>
-          <span style={{ fontSize:'0.7rem', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gray-500)', padding:'0.2rem 0.6rem', border:'1px solid var(--gray-300)', borderRadius:3 }}>Docs</span>
+          <span className="text-xs uppercase tracking-wider text-light-grey-1 px-2 py-0.5 border border-dark-grey-3 rounded">Docs</span>
         </div>
-        <div style={{ display:'flex', gap:'0.75rem' }}>
-          <Link to="/app" className="sw-btn sw-btn-ghost" style={{ fontSize:'0.68rem', padding:'0.4rem 0.85rem' }}>Launch App</Link>
-          <Link to="/auth" className="sw-btn sw-btn-primary" style={{ fontSize:'0.68rem', padding:'0.4rem 0.85rem' }}>Get API Key</Link>
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex gap-3">
+            <Link to="/app" className="sw-btn sw-btn-ghost text-xs py-1.5 px-3">Launch App</Link>
+            <Link to="/auth" className="sw-btn sw-btn-primary text-xs py-1.5 px-3">Get API Key</Link>
+          </div>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden text-almost-white w-8 h-8 flex items-center justify-center border border-dark-grey-3 rounded"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
         </div>
       </header>
 
-      <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', maxWidth:1280, margin:'0 auto', minHeight:'calc(100vh - 56px)' }}>
-        {/* Sidebar nav */}
-        <nav style={{ padding:'2rem 0', borderRight:'1px solid var(--gray-300)', position:'sticky', top:56, height:'calc(100vh - 56px)', overflowY:'auto' }}>
-          {DOC_SECTIONS.map(sec => (
-            <a key={sec.id} href={`#${sec.id}`} onClick={() => setActiveSection(sec.id)}
-              style={{ display:'block', padding:'0.55rem 1.5rem', fontSize:'0.78rem', color: activeSection===sec.id ? 'var(--gray-900)' : 'var(--gray-500)', borderLeft: activeSection===sec.id ? '2px solid var(--gray-700)' : '2px solid transparent', transition:'all 0.2s' }}>
-              {sec.label}
-            </a>
-          ))}
-        </nav>
+      <div className="max-w-7xl mx-auto flex">
+        {/* Sidebar – collapsible on mobile */}
+        <aside className={`
+          fixed inset-y-0 left-0 z-40 w-64 bg-dark-grey-1 border-r border-dark-grey-3 transform transition-transform duration-200 ease-in-out
+          md:relative md:translate-x-0 md:block md:top-0
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <div className="p-4 border-b border-dark-grey-3 md:hidden">
+            <div className="text-xs uppercase tracking-wider text-light-grey-1">Docs Menu</div>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="absolute top-4 right-4 text-light-grey-1"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <nav className="py-4">
+            {DOC_SECTIONS.map(sec => (
+              <button
+                key={sec.id}
+                onClick={() => scrollToSection(sec.id)}
+                className={`block w-full text-left px-5 py-2.5 text-sm transition-all duration-200 ${
+                  activeSection === sec.id
+                    ? 'text-almost-white bg-dark-grey-2 border-l-2 border-light-grey-3'
+                    : 'text-light-grey-1 hover:text-light-grey-3 hover:bg-dark-grey-2'
+                }`}
+              >
+                {sec.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-        {/* Content */}
-        <article style={{ padding:'3rem 3rem 6rem', maxWidth:800 }}>
-
-          <section id="introduction" style={{ marginBottom:'4rem' }}>
-            <h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:'2.5rem', fontWeight:800, color:'var(--gray-900)', letterSpacing:'-0.03em', marginBottom:'1rem', lineHeight:1.1 }}>Swipass API<br /><span style={{ fontFamily:"'Instrument Serif',serif", fontStyle:'italic', fontWeight:400, fontSize:'2rem', color:'var(--gray-600)' }}>Developer Documentation</span></h1>
-            <p style={{ color:'var(--gray-500)', fontSize:'0.9rem', lineHeight:1.8, marginBottom:'1.5rem' }}>
+        {/* Main content */}
+        <article className="flex-1 p-6 md:p-8 lg:p-12 max-w-4xl mx-auto">
+          <section id="introduction" className="mb-12 scroll-mt-20">
+            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-almost-white tracking-tighter leading-tight mb-4">
+              Swipass API<br />
+              <span className="font-serif italic font-normal text-light-grey-2 text-2xl sm:text-3xl">Developer Documentation</span>
+            </h1>
+            <p className="text-light-grey-1 text-sm sm:text-base leading-relaxed mb-6">
               Swipass gives you a single REST endpoint to execute any cross-chain swap, bridge, or send in natural language. Your users just type (or speak) what they want — Swipass handles the rest.
             </p>
-            <div style={{ display:'flex', gap:'1rem', flexWrap:'wrap' }}>
-              <div style={{ padding:'0.75rem 1.25rem', background:'var(--gray-100)', border:'1px solid var(--gray-300)', borderRadius:6, fontSize:'0.78rem', color:'var(--gray-600)' }}>Base URL: <code style={{ color:'var(--gray-800)' }}>https://api.swipass.xyz</code></div>
-              <div style={{ padding:'0.75rem 1.25rem', background:'var(--gray-100)', border:'1px solid var(--gray-300)', borderRadius:6, fontSize:'0.78rem', color:'var(--gray-600)' }}>Format: <code style={{ color:'var(--gray-800)' }}>application/json</code></div>
+            <div className="flex flex-wrap gap-4">
+              <div className="px-3 py-2 bg-dark-grey-1 border border-dark-grey-3 rounded text-xs text-light-grey-2">Base URL: <code className="text-almost-white">https://api.swipass.xyz</code></div>
+              <div className="px-3 py-2 bg-dark-grey-1 border border-dark-grey-3 rounded text-xs text-light-grey-2">Format: <code className="text-almost-white">application/json</code></div>
             </div>
           </section>
 
-          <section id="authentication" style={{ marginBottom:'4rem' }}>
-            <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.5rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'1rem' }}>Authentication</h2>
-            <p style={{ color:'var(--gray-500)', fontSize:'0.85rem', lineHeight:1.8, marginBottom:'1.5rem' }}>
-              All developer API requests must include your API key via the <code style={{ background:'var(--gray-200)', padding:'1px 5px', borderRadius:3, color:'var(--gray-700)' }}>X-API-Key</code> header. 
-              Get your key by creating a project in the <Link to="/dashboard/developer" style={{ color:'var(--gray-700)', textDecoration:'underline' }}>Developer Dashboard</Link>.
+          <section id="authentication" className="mb-12 scroll-mt-20">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter mb-4">Authentication</h2>
+            <p className="text-light-grey-1 text-sm sm:text-base leading-relaxed mb-6">
+              All developer API requests must include your API key via the <code className="bg-dark-grey-2 px-1 py-0.5 rounded text-light-grey-3 text-xs">X-API-Key</code> header. 
+              Get your key by creating a project in the <Link to="/dashboard/developer" className="text-light-grey-3 underline">Developer Dashboard</Link>.
             </p>
-            <div style={{ padding:'1.25rem', background:'var(--gray-100)', border:'1px solid var(--gray-300)', borderRadius:8, marginBottom:'1rem' }}>
-              {[
-                ['X-API-Key', 'sw_live_...', 'Required for developer projects'],
-                ['X-LLM-Provider', 'openai | anthropic', 'Optional BYO-LLM provider'],
-                ['X-LLM-API-Key', 'sk-...', 'Optional BYO-LLM key (never stored)'],
-                ['X-LLM-Model', 'gpt-4o-mini', 'Optional BYO-LLM model'],
-              ].map(([h,v,d]) => (
-                <div key={h} style={{ display:'grid', gridTemplateColumns:'1.5fr 1fr 2fr', gap:'1rem', padding:'0.5rem 0', borderBottom:'1px solid var(--gray-300)', fontSize:'0.78rem' }}>
-                  <code style={{ color:'var(--gray-800)', fontFamily:"'DM Mono',monospace" }}>{h}</code>
-                  <span style={{ color:'var(--gray-500)' }}>{v}</span>
-                  <span style={{ color:'var(--gray-400)' }}>{d}</span>
-                </div>
-              ))}
+            <div className="bg-dark-grey-1 border border-dark-grey-3 rounded-lg p-4 mb-4 overflow-x-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="font-mono text-light-grey-3">X-API-Key</div>
+                <div className="text-light-grey-1">sw_live_...</div>
+                <div className="text-light-grey-2">Required for developer projects</div>
+                <div className="font-mono text-light-grey-3">X-LLM-Provider</div>
+                <div className="text-light-grey-1">openai | anthropic</div>
+                <div className="text-light-grey-2">Optional BYO-LLM provider</div>
+                <div className="font-mono text-light-grey-3">X-LLM-API-Key</div>
+                <div className="text-light-grey-1">sk-...</div>
+                <div className="text-light-grey-2">Optional BYO-LLM key (never stored)</div>
+                <div className="font-mono text-light-grey-3">X-LLM-Model</div>
+                <div className="text-light-grey-1">gpt-4o-mini</div>
+                <div className="text-light-grey-2">Optional BYO-LLM model</div>
+              </div>
             </div>
           </section>
 
-          <section id="quick-start" style={{ marginBottom:'4rem' }}>
-            <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.5rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'1rem' }}>Quick Start</h2>
-            <p style={{ color:'var(--gray-500)', fontSize:'0.85rem', lineHeight:1.8, marginBottom:'1.5rem' }}>Make your first cross-chain intent request in under 2 minutes.</p>
+          <section id="quick-start" className="mb-12 scroll-mt-20">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter mb-4">Quick Start</h2>
+            <p className="text-light-grey-1 text-sm sm:text-base leading-relaxed mb-6">Make your first cross-chain intent request in under 2 minutes.</p>
             <ExampleTabs examples={CODE_EXAMPLES['Quick Start']} />
           </section>
 
-          <section id="endpoints" style={{ marginBottom:'4rem' }}>
-            <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.5rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'1.5rem' }}>API Endpoints</h2>
-            {[
-              { method:'POST', path:'/v1/intent', desc:'Execute a cross-chain intent from natural language.', auth:'Optional (X-API-Key)', body:'command, destination_address?, wallet_address?' },
-              { method:'GET', path:'/v1/stats', desc:'Real-time platform statistics.', auth:'None', body:'-' },
-              { method:'GET', path:'/v1/chains', desc:'List all supported chains.', auth:'None', body:'-' },
-              { method:'GET', path:'/v1/providers', desc:'List active execution providers.', auth:'None', body:'-' },
-              { method:'GET', path:'/platform/projects', desc:'List your developer projects.', auth:'Clerk JWT', body:'-' },
-              { method:'POST', path:'/platform/projects', desc:'Create a new project.', auth:'Clerk JWT', body:'name, description?' },
-            ].map(ep => (
-              <div key={ep.path} style={{ padding:'1.25rem', background:'var(--gray-100)', border:'1px solid var(--gray-300)', borderRadius:8, marginBottom:'0.75rem' }}>
-                <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', marginBottom:'0.5rem' }}>
-                  <span style={{ padding:'0.2rem 0.5rem', background: ep.method==='POST' ? 'var(--gray-400)' : 'var(--gray-300)', borderRadius:3, fontSize:'0.65rem', letterSpacing:'0.08em', textTransform:'uppercase', color: ep.method==='POST' ? 'var(--gray-900)' : 'var(--gray-700)', fontFamily:"'DM Mono',monospace", fontWeight:500 }}>{ep.method}</span>
-                  <code style={{ fontFamily:"'DM Mono',monospace", fontSize:'0.85rem', color:'var(--gray-800)' }}>{ep.path}</code>
+          <section id="endpoints" className="mb-12 scroll-mt-20">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter mb-6">API Endpoints</h2>
+            <div className="space-y-4">
+              {[
+                { method:'POST', path:'/v1/intent', desc:'Execute a cross-chain intent from natural language.', auth:'Optional (X-API-Key)', body:'command, destination_address?, wallet_address?' },
+                { method:'GET', path:'/v1/stats', desc:'Real-time platform statistics.', auth:'None', body:'-' },
+                { method:'GET', path:'/v1/chains', desc:'List all supported chains.', auth:'None', body:'-' },
+                { method:'GET', path:'/v1/providers', desc:'List active execution providers.', auth:'None', body:'-' },
+                { method:'GET', path:'/platform/projects', desc:'List your developer projects.', auth:'Clerk JWT', body:'-' },
+                { method:'POST', path:'/platform/projects', desc:'Create a new project.', auth:'Clerk JWT', body:'name, description?' },
+              ].map(ep => (
+                <div key={ep.path} className="bg-dark-grey-1 border border-dark-grey-3 rounded-lg p-4">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className={`text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded ${
+                      ep.method === 'POST' ? 'bg-mid-grey text-almost-white' : 'bg-dark-grey-2 text-light-grey-1'
+                    }`}>{ep.method}</span>
+                    <code className="font-mono text-sm text-light-grey-3">{ep.path}</code>
+                  </div>
+                  <p className="text-light-grey-2 text-sm mb-2">{ep.desc}</p>
+                  <div className="text-xs text-light-grey-1">Auth: {ep.auth} · Body: {ep.body}</div>
                 </div>
-                <p style={{ color:'var(--gray-500)', fontSize:'0.8rem', margin:'0 0 0.5rem' }}>{ep.desc}</p>
-                <div style={{ fontSize:'0.72rem', color:'var(--gray-400)' }}>Auth: {ep.auth} · Body: {ep.body}</div>
-              </div>
-            ))}
+              ))}
+            </div>
           </section>
 
-          <section id="byollm" style={{ marginBottom:'4rem' }}>
-            <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.5rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'1rem' }}>BYO-LLM (Bring Your Own LLM)</h2>
-            <p style={{ color:'var(--gray-500)', fontSize:'0.85rem', lineHeight:1.8, marginBottom:'1.5rem' }}>Pass your own LLM API keys per request to control costs and choose your preferred model. Keys are used only for that single request and never stored by Swipass.</p>
+          <section id="byollm" className="mb-12 scroll-mt-20">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter mb-4">BYO-LLM (Bring Your Own LLM)</h2>
+            <p className="text-light-grey-1 text-sm sm:text-base leading-relaxed mb-6">Pass your own LLM API keys per request to control costs and choose your preferred model. Keys are used only for that single request and never stored by Swipass.</p>
             <ExampleTabs examples={CODE_EXAMPLES['BYO-LLM']} />
           </section>
 
-          <section id="destination" style={{ marginBottom:'4rem' }}>
-            <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.5rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'1rem' }}>Destination Address</h2>
-            <p style={{ color:'var(--gray-500)', fontSize:'0.85rem', lineHeight:1.8, marginBottom:'1.5rem' }}>By default, bridged or swapped assets go to the connected wallet on the destination chain. Pass <code style={{ background:'var(--gray-200)', padding:'1px 5px', borderRadius:3, color:'var(--gray-700)' }}>destination_address</code> to send funds to a different address. This works for both direct users and developer integrations.</p>
+          <section id="destination" className="mb-12 scroll-mt-20">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter mb-4">Destination Address</h2>
+            <p className="text-light-grey-1 text-sm sm:text-base leading-relaxed mb-6">By default, bridged or swapped assets go to the connected wallet on the destination chain. Pass <code className="bg-dark-grey-2 px-1 py-0.5 rounded text-light-grey-3 text-xs">destination_address</code> to send funds to a different address. This works for both direct users and developer integrations.</p>
             <ExampleTabs examples={CODE_EXAMPLES['Destination Address']} />
           </section>
 
-          <section id="errors" style={{ marginBottom:'4rem' }}>
-            <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.5rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'1.5rem' }}>Error Reference</h2>
-            <div style={{ border:'1px solid var(--gray-300)', borderRadius:8, overflow:'hidden' }}>
-              <div style={{ display:'grid', gridTemplateColumns:'100px 1fr 2fr', padding:'0.5rem 1rem', background:'var(--gray-200)', fontSize:'0.62rem', letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--gray-500)', borderBottom:'1px solid var(--gray-300)' }}>
-                {['Status','Code','Message'].map(h=><span key={h}>{h}</span>)}
-              </div>
-              {[
-                [422,'intent_error','Failed to parse command or route the intent'],
-                [401,'unauthorized','Authentication required or API key invalid'],
-                [403,'project_paused','API key project has been paused'],
-                [429,'rate_limited','Too many requests. Slow down.'],
-                [503,'service_paused','Platform is temporarily paused for maintenance'],
-                [500,'internal_error','Unexpected server error. Retry with backoff.'],
-              ].map(([status, code, msg]) => (
-                <div key={code as string} style={{ display:'grid', gridTemplateColumns:'100px 1fr 2fr', padding:'0.7rem 1rem', borderBottom:'1px solid var(--gray-300)', fontSize:'0.78rem', alignItems:'center' }}>
-                  <code style={{ color:'var(--gray-600)', fontFamily:"'DM Mono',monospace" }}>{status}</code>
-                  <code style={{ color:'var(--gray-700)', fontFamily:"'DM Mono',monospace" }}>{code}</code>
-                  <span style={{ color:'var(--gray-500)' }}>{msg}</span>
+          <section id="errors" className="mb-12 scroll-mt-20">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter mb-6">Error Reference</h2>
+            <div className="border border-dark-grey-3 rounded-lg overflow-hidden overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-dark-grey-2 text-light-grey-1 text-xs uppercase tracking-wider">
+                  <tr><th className="p-3">Status</th><th className="p-3">Code</th><th className="p-3">Message</th></tr>
+                </thead>
+                <tbody>
+                  {[
+                    [422,'intent_error','Failed to parse command or route the intent'],
+                    [401,'unauthorized','Authentication required or API key invalid'],
+                    [403,'project_paused','API key project has been paused'],
+                    [429,'rate_limited','Too many requests. Slow down.'],
+                    [503,'service_paused','Platform is temporarily paused for maintenance'],
+                    [500,'internal_error','Unexpected server error. Retry with backoff.'],
+                  ].map(([status, code, msg]) => (
+                    <tr key={code as string} className="border-b border-dark-grey-3">
+                      <td className="p-3 font-mono text-light-grey-2">{status}</td>
+                      <td className="p-3 font-mono text-light-grey-2">{code}</td>
+                      <td className="p-3 text-light-grey-1">{msg}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="providers" className="mb-12 scroll-mt-20">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter mb-4">Providers</h2>
+            <p className="text-light-grey-1 text-sm sm:text-base leading-relaxed mb-6">Swipass queries all active providers simultaneously and selects the best quote using a weighted scoring algorithm:</p>
+            <div className="flex flex-wrap gap-8 p-5 bg-dark-grey-1 border border-dark-grey-3 rounded-lg mb-6">
+              {[['Output Amount','70%'],['Speed','20%'],['Historical Success Rate','10%']].map(([l,v]) => (
+                <div key={l}>
+                  <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-1">{l}</div>
+                  <div className="font-display text-2xl font-bold text-almost-white">{v}</div>
                 </div>
               ))}
             </div>
+            <p className="text-light-grey-1 text-sm leading-relaxed">If the selected provider fails during transaction building, Swipass automatically falls back to the next best provider from the original quote set. Providers are modular — new protocols can be added without any changes to the API interface.</p>
           </section>
 
-          <section id="providers" style={{ marginBottom:'4rem' }}>
-            <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.5rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'1rem' }}>Providers</h2>
-            <p style={{ color:'var(--gray-500)', fontSize:'0.85rem', lineHeight:1.8, marginBottom:'1.5rem' }}>Swipass queries all active providers simultaneously and selects the best quote using a weighted scoring algorithm:</p>
-            <div style={{ display:'flex', gap:'2rem', padding:'1.25rem', background:'var(--gray-100)', border:'1px solid var(--gray-300)', borderRadius:8, marginBottom:'1.5rem', flexWrap:'wrap' }}>
-              {[['Output Amount','70%'],['Speed','20%'],['Historical Success Rate','10%']].map(([l,v]) => (
-                <div key={l}><div style={{ fontSize:'0.6rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:'0.25rem' }}>{l}</div><div style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.4rem', fontWeight:700, color:'var(--gray-900)' }}>{v}</div></div>
-              ))}
+          <section id="fees" className="mb-12 scroll-mt-20">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter mb-6">Fees & Revenue Sharing</h2>
+            <div className="border border-dark-grey-3 rounded-lg overflow-hidden mb-6">
+              <table className="w-full">
+                <thead className="bg-dark-grey-2 text-light-grey-1 text-xs uppercase tracking-wider">
+                  <tr><th className="p-3">User Type</th><th className="p-3">Platform Fee</th><th className="p-3">Your Share</th></tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-dark-grey-3"><td className="p-3 text-light-grey-2">Direct Swipass User</td><td className="p-3 text-light-grey-2">0.10%</td><td className="p-3 text-light-grey-2">—</td></tr>
+                  <tr className="bg-dark-grey-1"><td className="p-3 text-almost-white font-medium">Via Developer App</td><td className="p-3 text-light-grey-2">0.15%</td><td className="p-3 text-almost-white font-semibold">0.075% (50%)</td></tr>
+                </tbody>
+              </table>
             </div>
-            <p style={{ color:'var(--gray-500)', fontSize:'0.82rem', lineHeight:1.7 }}>If the selected provider fails during transaction building, Swipass automatically falls back to the next best provider from the original quote set. Providers are modular — new protocols can be added without any changes to the API interface.</p>
+            <p className="text-light-grey-1 text-sm leading-relaxed">Developer earnings accumulate in your project balance. Once your balance reaches $50 USD equivalent, the "Withdraw" button activates in your dashboard. Withdrawals go to your configured EVM payout wallet.</p>
           </section>
-
-          <section id="fees" style={{ marginBottom:'4rem' }}>
-            <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.5rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'1rem' }}>Fees & Revenue Sharing</h2>
-            <div style={{ border:'1px solid var(--gray-300)', borderRadius:8, overflow:'hidden', marginBottom:'1.5rem' }}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', padding:'0.5rem 1rem', background:'var(--gray-200)', fontSize:'0.62rem', letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--gray-500)', borderBottom:'1px solid var(--gray-300)' }}>
-                {['User Type','Platform Fee','Your Share'].map(h=><span key={h}>{h}</span>)}
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', padding:'0.75rem 1rem', borderBottom:'1px solid var(--gray-300)', fontSize:'0.82rem' }}>
-                <span style={{ color:'var(--gray-700)' }}>Direct Swipass User</span><span style={{ color:'var(--gray-600)' }}>0.10%</span><span style={{ color:'var(--gray-400)' }}>—</span>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', padding:'0.75rem 1rem', fontSize:'0.82rem', background:'var(--gray-200)' }}>
-                <span style={{ color:'var(--gray-900)', fontWeight:500 }}>Via Developer App</span><span style={{ color:'var(--gray-800)' }}>0.15%</span><span style={{ color:'var(--gray-900)', fontWeight:600 }}>0.075% (50%)</span>
-              </div>
-            </div>
-            <p style={{ color:'var(--gray-500)', fontSize:'0.82rem', lineHeight:1.7 }}>Developer earnings accumulate in your project balance. Once your balance reaches $50 USD equivalent, the "Withdraw" button activates in your dashboard. Withdrawals go to your configured EVM payout wallet.</p>
-          </section>
-
         </article>
       </div>
     </div>

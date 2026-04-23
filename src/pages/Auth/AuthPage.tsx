@@ -1,4 +1,3 @@
-// src/pages/Auth/AuthPage.tsx
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SignIn, SignUp } from '@clerk/clerk-react'
@@ -7,54 +6,37 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin')
 
   return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--gray-50)', fontFamily:"'DM Mono',monospace", padding:'2rem' }}>
-      <div style={{ width:'100%', maxWidth:480, background:'var(--gray-100)', border:'1px solid var(--gray-300)', borderRadius:12, padding:'2rem', textAlign:'center' }}>
-        <Link to="/" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', fontFamily:"'Syne',sans-serif", fontSize:'1.1rem', fontWeight:800, color:'var(--gray-900)', letterSpacing:'-0.03em', marginBottom:'1.5rem' }}>
-          <div style={{ width:24, height:24, border:'1.5px solid var(--gray-500)', borderRadius:5, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.55rem', color:'var(--gray-500)' }}>SW</div>
+    <div className="min-h-screen flex items-center justify-center bg-deepest-dark font-mono p-4 sm:p-6 md:p-8">
+      <div className="w-full max-w-md bg-dark-grey-1 border border-dark-grey-3 rounded-xl p-6 sm:p-8 text-center">
+        <Link to="/" className="flex items-center justify-center gap-2 font-display text-lg font-extrabold text-almost-white tracking-tighter mb-6">
           Swipass
         </Link>
 
         {/* Tabs */}
-        <div style={{ display:'flex', borderBottom:'1px solid var(--gray-300)', marginBottom:'1.5rem' }}>
+        <div className="flex border-b border-dark-grey-3 mb-6">
           <button
             onClick={() => setActiveTab('signin')}
-            style={{
-              flex:1,
-              padding:'0.75rem 1rem',
-              background:'none',
-              border:'none',
-              fontFamily:"'Syne',sans-serif",
-              fontSize:'0.85rem',
-              fontWeight:600,
-              color: activeTab === 'signin' ? 'var(--gray-900)' : 'var(--gray-500)',
-              borderBottom: activeTab === 'signin' ? '2px solid var(--gray-700)' : '2px solid transparent',
-              cursor:'none',
-              transition:'all 0.2s',
-            }}
+            className={`flex-1 py-3 font-display text-sm font-semibold transition-all duration-200 cursor-none ${
+              activeTab === 'signin'
+                ? 'text-almost-white border-b-2 border-light-grey-3'
+                : 'text-light-grey-1 border-b-2 border-transparent'
+            }`}
           >
             Sign In
           </button>
           <button
             onClick={() => setActiveTab('signup')}
-            style={{
-              flex:1,
-              padding:'0.75rem 1rem',
-              background:'none',
-              border:'none',
-              fontFamily:"'Syne',sans-serif",
-              fontSize:'0.85rem',
-              fontWeight:600,
-              color: activeTab === 'signup' ? 'var(--gray-900)' : 'var(--gray-500)',
-              borderBottom: activeTab === 'signup' ? '2px solid var(--gray-700)' : '2px solid transparent',
-              cursor:'none',
-              transition:'all 0.2s',
-            }}
+            className={`flex-1 py-3 font-display text-sm font-semibold transition-all duration-200 cursor-none ${
+              activeTab === 'signup'
+                ? 'text-almost-white border-b-2 border-light-grey-3'
+                : 'text-light-grey-1 border-b-2 border-transparent'
+            }`}
           >
             Create Account
           </button>
         </div>
 
-        {/* Conditional rendering of Clerk components */}
+        {/* Clerk sign‑in or sign‑up */}
         {activeTab === 'signin' ? (
           <SignIn
             routing="path"
@@ -68,18 +50,18 @@ export default function AuthPage() {
                 headerTitle: 'hidden',
                 headerSubtitle: 'hidden',
                 formButtonPrimary: 'sw-btn sw-btn-primary w-full justify-center',
-                formFieldInput: 'w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm font-mono text-gray-200 focus:outline-none focus:border-gray-400',
+                formFieldInput: 'w-full bg-dark-grey-2 border border-mid-grey rounded px-3 py-2 text-sm font-mono text-light-grey-3 focus:outline-none focus:border-light-grey-1',
                 footer: 'hidden',
-                socialButtonsBlockButton: 'bg-gray-800 border border-gray-600 text-gray-200 hover:bg-gray-700',
-                socialButtonsBlockButtonText: 'text-gray-200',
-                dividerLine: 'bg-gray-700',
-                dividerText: 'text-gray-400',
-                formFieldLabel: 'text-gray-300 text-left text-xs',
-                formFieldAction: 'text-gray-400 text-xs',
-                identityPreview: 'bg-gray-800 border-gray-600',
-                identityPreviewText: 'text-gray-200',
-                otpCodeFieldInput: 'bg-gray-800 border-gray-600 text-gray-200',
-                formResendCodeLink: 'text-gray-400',
+                socialButtonsBlockButton: 'bg-dark-grey-2 border border-mid-grey text-light-grey-3 hover:bg-dark-grey-3',
+                socialButtonsBlockButtonText: 'text-light-grey-3',
+                dividerLine: 'bg-mid-grey',
+                dividerText: 'text-light-grey-1',
+                formFieldLabel: 'text-light-grey-2 text-left text-xs',
+                formFieldAction: 'text-light-grey-1 text-xs',
+                identityPreview: 'bg-dark-grey-2 border-mid-grey',
+                identityPreviewText: 'text-light-grey-3',
+                otpCodeFieldInput: 'bg-dark-grey-2 border-mid-grey text-light-grey-3',
+                formResendCodeLink: 'text-light-grey-1',
                 formFieldErrorText: 'text-red-400 text-xs',
               },
               variables: {
@@ -108,18 +90,18 @@ export default function AuthPage() {
                 headerTitle: 'hidden',
                 headerSubtitle: 'hidden',
                 formButtonPrimary: 'sw-btn sw-btn-primary w-full justify-center',
-                formFieldInput: 'w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm font-mono text-gray-200 focus:outline-none focus:border-gray-400',
+                formFieldInput: 'w-full bg-dark-grey-2 border border-mid-grey rounded px-3 py-2 text-sm font-mono text-light-grey-3 focus:outline-none focus:border-light-grey-1',
                 footer: 'hidden',
-                socialButtonsBlockButton: 'bg-gray-800 border border-gray-600 text-gray-200 hover:bg-gray-700',
-                socialButtonsBlockButtonText: 'text-gray-200',
-                dividerLine: 'bg-gray-700',
-                dividerText: 'text-gray-400',
-                formFieldLabel: 'text-gray-300 text-left text-xs',
-                formFieldAction: 'text-gray-400 text-xs',
-                identityPreview: 'bg-gray-800 border-gray-600',
-                identityPreviewText: 'text-gray-200',
-                otpCodeFieldInput: 'bg-gray-800 border-gray-600 text-gray-200',
-                formResendCodeLink: 'text-gray-400',
+                socialButtonsBlockButton: 'bg-dark-grey-2 border border-mid-grey text-light-grey-3 hover:bg-dark-grey-3',
+                socialButtonsBlockButtonText: 'text-light-grey-3',
+                dividerLine: 'bg-mid-grey',
+                dividerText: 'text-light-grey-1',
+                formFieldLabel: 'text-light-grey-2 text-left text-xs',
+                formFieldAction: 'text-light-grey-1 text-xs',
+                identityPreview: 'bg-dark-grey-2 border-mid-grey',
+                identityPreviewText: 'text-light-grey-3',
+                otpCodeFieldInput: 'bg-dark-grey-2 border-mid-grey text-light-grey-3',
+                formResendCodeLink: 'text-light-grey-1',
                 formFieldErrorText: 'text-red-400 text-xs',
               },
               variables: {
@@ -137,12 +119,13 @@ export default function AuthPage() {
           />
         )}
 
-        <div style={{ marginTop:'1.5rem', padding:'0.75rem', border:'1px solid var(--gray-300)', borderRadius:8 }}>
-          <p style={{ fontSize:'0.7rem', color:'var(--gray-500)', margin:0 }}>
-            Need help? <Link to="/docs" style={{ color:'var(--gray-700)', textDecoration:'underline' }}>Read the docs</Link>
+        {/* Help footer and back button */}
+        <div className="mt-6 p-3 border border-dark-grey-3 rounded-md">
+          <p className="text-xs text-light-grey-1">
+            Need help? <Link to="/docs" className="text-light-grey-3 underline">Read the docs</Link>
           </p>
         </div>
-        <Link to="/" className="sw-btn sw-btn-ghost" style={{ marginTop:'1rem', justifyContent:'center', width:'100%' }}>← Back to Home</Link>
+        <Link to="/" className="sw-btn sw-btn-ghost w-full justify-center mt-4">← Back to Home</Link>
       </div>
     </div>
   )

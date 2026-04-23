@@ -1,6 +1,6 @@
 // src/pages/DeveloperDashboard/index.tsx
 import { useState, useEffect } from 'react'
-import { Link, Routes, Route, useNavigate } from 'react-router-dom'
+import { Link, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { platformService } from '../../services/platformService'
 import toast from 'react-hot-toast'
 
@@ -12,34 +12,87 @@ const NAV_ITEMS = [
 ]
 
 function DashLayout({ children, active }: { children: React.ReactNode; active: string }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const location = useLocation()
+
+  // Automatically close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [location.pathname])
+
   return (
-    <div style={{ height:'100vh', display:'grid', gridTemplateRows:'56px 1fr', gridTemplateColumns:'220px 1fr', background:'var(--gray-50)', fontFamily:"'DM Mono',monospace" }}>
-      <header style={{ gridColumn:'1/-1', background:'var(--gray-100)', borderBottom:'1px solid var(--gray-300)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 1.5rem' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'1.5rem' }}>
-          <Link to="/" style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontFamily:"'Syne',sans-serif", fontSize:'1rem', fontWeight:800, color:'var(--gray-900)', letterSpacing:'-0.03em' }}>
-            <div style={{ width:24, height:24, border:'1.5px solid var(--gray-500)', borderRadius:5, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.55rem', color:'var(--gray-500)' }}>SW</div>
+    <div className="min-h-screen bg-deepest-dark font-mono flex flex-col">
+      {/* Header */}
+      <header className="bg-dark-grey-1 border-b border-dark-grey-3 px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="flex items-center gap-2 font-display text-lg font-extrabold text-almost-white tracking-tighter">
             Swipass
           </Link>
-          <span style={{ fontSize:'0.7rem', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gray-500)', padding:'0.2rem 0.6rem', border:'1px solid var(--gray-300)', borderRadius:3 }}>Developer</span>
+          <span className="text-xs uppercase tracking-wider text-light-grey-1 px-2 py-1 border border-dark-grey-3 rounded">Developer</span>
         </div>
-        <div style={{ display:'flex', gap:'0.75rem' }}>
-          <Link to="/app" className="sw-btn sw-btn-ghost" style={{ fontSize:'0.68rem', padding:'0.4rem 0.85rem' }}>← App</Link>
-          <Link to="/docs" className="sw-btn sw-btn-ghost" style={{ fontSize:'0.68rem', padding:'0.4rem 0.85rem' }}>Docs</Link>
+        <div className="flex items-center gap-3">
+          {/* Desktop navigation links */}
+          <div className="hidden md:flex gap-4">
+            <Link to="/app" className="sw-btn sw-btn-ghost text-xs py-1.5 px-3">← App</Link>
+            <Link to="/docs" className="sw-btn sw-btn-ghost text-xs py-1.5 px-3">Docs</Link>
+          </div>
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden text-almost-white w-8 h-8 flex items-center justify-center border border-dark-grey-3 rounded"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
         </div>
       </header>
-      <nav style={{ background:'var(--gray-100)', borderRight:'1px solid var(--gray-300)', padding:'1.5rem 0' }}>
-        <div style={{ padding:'0 1.25rem', marginBottom:'1.5rem', fontSize:'0.6rem', letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--gray-500)' }}>Navigation</div>
-        {NAV_ITEMS.map(item => (
-          <Link key={item.label} to={`/dashboard/developer${item.path ? '/'+item.path : ''}`}
-            style={{ display:'block', padding:'0.65rem 1.25rem', fontSize:'0.8rem', color: active===item.path ? 'var(--gray-900)' : 'var(--gray-500)', background: active===item.path ? 'var(--gray-200)' : 'transparent', borderLeft: active===item.path ? '2px solid var(--gray-700)' : '2px solid transparent', transition:'all 0.25s' }}>
-            {item.label}
-          </Link>
-        ))}
-        <div style={{ margin:'1.5rem 1.25rem 0', paddingTop:'1.5rem', borderTop:'1px solid var(--gray-300)' }}>
-          <Link to="/dashboard/admin" style={{ display:'block', padding:'0.65rem 0', fontSize:'0.75rem', color:'var(--gray-500)', transition:'color 0.25s' }}>Admin Panel →</Link>
-        </div>
-      </nav>
-      <main style={{ overflowY:'auto', padding:'2rem' }}>{children}</main>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar – hidden on mobile unless open */}
+        <aside className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-dark-grey-1 border-r border-dark-grey-3 transform transition-transform duration-200 ease-in-out
+          md:relative md:translate-x-0 md:block
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <div className="p-4 border-b border-dark-grey-3">
+            <div className="text-xs uppercase tracking-wider text-light-grey-1">Navigation</div>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="absolute top-4 right-4 md:hidden text-light-grey-1"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <nav className="py-4">
+            {NAV_ITEMS.map(item => (
+              <Link
+                key={item.label}
+                to={`/dashboard/developer${item.path ? '/' + item.path : ''}`}
+                className={`block px-6 py-3 text-sm transition-all duration-200 ${
+                  active === item.path
+                    ? 'text-almost-white bg-dark-grey-2 border-l-2 border-light-grey-3'
+                    : 'text-light-grey-1 hover:text-light-grey-3 hover:bg-dark-grey-2'
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div className="mt-8 pt-4 border-t border-dark-grey-3 px-6">
+              <Link to="/dashboard/admin" className="block text-sm text-light-grey-1 hover:text-light-grey-3 transition-colors">
+                Admin Panel →
+              </Link>
+            </div>
+          </nav>
+        </aside>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }
@@ -51,24 +104,24 @@ function Overview() {
   const totalVolume = projects.reduce((s,p) => s + (p.total_volume_usd||0), 0)
   return (
     <div>
-      <h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.75rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'0.5rem' }}>Developer Overview</h1>
-      <p style={{ color:'var(--gray-500)', fontSize:'0.82rem', marginBottom:'2rem' }}>Manage your Swipass integrations and track earnings.</p>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'1rem', marginBottom:'2rem' }}>
+      <h1 className="font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter mb-2">Developer Overview</h1>
+      <p className="text-light-grey-1 text-sm mb-6">Manage your Swipass integrations and track earnings.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
           { label:'Total Projects', value: projects.length },
           { label:'Total Earned', value:`$${totalEarned.toFixed(2)}` },
           { label:'Total Volume', value:`$${totalVolume.toFixed(0)}` },
         ].map(s => (
           <div key={s.label} className="dash-card">
-            <div style={{ fontSize:'0.6rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:'0.5rem' }}>{s.label}</div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.75rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.03em' }}>{s.value}</div>
+            <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-1">{s.label}</div>
+            <div className="font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter">{s.value}</div>
           </div>
         ))}
       </div>
       <div className="dash-card">
-        <div style={{ fontSize:'0.7rem', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:'1rem', paddingBottom:'0.75rem', borderBottom:'1px solid var(--gray-300)' }}>Quick Start</div>
-        <pre style={{ fontFamily:"'DM Mono',monospace", fontSize:'0.78rem', color:'var(--gray-600)', lineHeight:1.8, background:'var(--gray-200)', padding:'1.25rem', borderRadius:6, overflow:'auto' }}>
-{`curl -X POST https://api.swipass.xyz/v1/intent \\
+        <div className="text-xs uppercase tracking-wider text-light-grey-1 pb-2 border-b border-dark-grey-3 mb-3">Quick Start</div>
+        <pre className="font-mono text-xs sm:text-sm text-light-grey-2 leading-relaxed bg-dark-grey-2 p-4 rounded-md overflow-auto">
+{`curl -X POST https://www.swipass.com/v1/intent \\
   -H "X-API-Key: sw_live_YOUR_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -107,65 +160,87 @@ function Projects() {
     await platformService.deleteProject(id); load(); toast.success('Deleted')
   }
 
-  if (loading) return <div style={{ color:'var(--gray-500)', fontSize:'0.8rem' }}>Loading...</div>
+  if (loading) return <div className="text-light-grey-1 text-sm">Loading...</div>
 
   return (
     <div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem' }}>
-        <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.4rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', margin:0 }}>Projects</h2>
-        <button onClick={() => setCreating(true)} className="sw-btn sw-btn-primary" style={{ fontSize:'0.7rem', padding:'0.5rem 1rem' }}>+ New Project</button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 className="font-display text-xl sm:text-2xl font-bold text-almost-white tracking-tighter">Projects</h2>
+        <button onClick={() => setCreating(true)} className="sw-btn sw-btn-primary text-xs sm:text-sm py-2 px-4">
+          + New Project
+        </button>
       </div>
 
       {newKey && (
-        <div style={{ padding:'1.25rem', background:'var(--gray-200)', border:'1px solid var(--gray-400)', borderRadius:8, marginBottom:'1.5rem' }}>
-          <div style={{ fontSize:'0.7rem', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:'0.5rem' }}>⚠️ Save your API key — shown once only</div>
-          <code style={{ fontFamily:"'DM Mono',monospace", fontSize:'0.85rem', color:'var(--gray-900)', wordBreak:'break-all', display:'block', marginBottom:'0.75rem' }}>{newKey}</code>
-          <button onClick={() => { navigator.clipboard.writeText(newKey); toast.success('Copied!') }} className="sw-btn sw-btn-ghost" style={{ fontSize:'0.68rem', padding:'0.4rem 0.75rem' }}>Copy Key</button>
-          <button onClick={() => setNewKey('')} style={{ marginLeft:'0.5rem', background:'none', border:'none', fontSize:'0.68rem', color:'var(--gray-500)', cursor:'none', fontFamily:"'DM Mono',monospace" }}>Dismiss</button>
+        <div className="p-4 bg-dark-grey-2 border border-mid-grey rounded-lg mb-4">
+          <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-2">⚠️ Save your API key — shown once only</div>
+          <code className="font-mono text-sm text-almost-white break-all block mb-3">{newKey}</code>
+          <button onClick={() => { navigator.clipboard.writeText(newKey); toast.success('Copied!') }} className="sw-btn sw-btn-ghost text-xs py-1.5 px-3">Copy Key</button>
+          <button onClick={() => setNewKey('')} className="ml-2 bg-none border-none text-xs text-light-grey-1 hover:text-light-grey-3 font-mono">Dismiss</button>
         </div>
       )}
 
       {creating && (
-        <div className="dash-card" style={{ marginBottom:'1.5rem' }}>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:'1rem', fontWeight:600, color:'var(--gray-900)', marginBottom:'1rem' }}>Create Project</div>
-          <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Project name" onKeyDown={e => e.key==='Enter' && create()}
-            style={{ width:'100%', background:'var(--gray-200)', border:'1px solid var(--gray-300)', borderRadius:5, padding:'0.5rem 0.75rem', fontFamily:"'DM Mono',monospace", fontSize:'0.82rem', color:'var(--gray-800)', outline:'none', marginBottom:'0.75rem' }} />
-          <div style={{ display:'flex', gap:'0.5rem' }}>
-            <button onClick={create} className="sw-btn sw-btn-primary" style={{ fontSize:'0.7rem', padding:'0.5rem 1rem' }}>Create</button>
-            <button onClick={() => setCreating(false)} className="sw-btn sw-btn-ghost" style={{ fontSize:'0.7rem', padding:'0.5rem 1rem' }}>Cancel</button>
+        <div className="dash-card mb-4">
+          <div className="font-display text-base font-semibold text-almost-white mb-3">Create Project</div>
+          <input
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            placeholder="Project name"
+            onKeyDown={e => e.key==='Enter' && create()}
+            className="w-full bg-dark-grey-2 border border-mid-grey rounded px-3 py-2 text-sm font-mono text-light-grey-3 focus:outline-none focus:border-light-grey-1 mb-3"
+          />
+          <div className="flex gap-3">
+            <button onClick={create} className="sw-btn sw-btn-primary text-xs py-2 px-4">Create</button>
+            <button onClick={() => setCreating(false)} className="sw-btn sw-btn-ghost text-xs py-2 px-4">Cancel</button>
           </div>
         </div>
       )}
 
       {projects.length === 0 ? (
-        <div className="dash-card" style={{ textAlign:'center', padding:'3rem' }}>
-          <p style={{ color:'var(--gray-500)', fontSize:'0.82rem', margin:0 }}>No projects yet. Create one to get started.</p>
+        <div className="dash-card text-center py-12">
+          <p className="text-light-grey-1 text-sm">No projects yet. Create one to get started.</p>
         </div>
-      ) : projects.map(p => (
-        <div key={p.id} className="dash-card" style={{ marginBottom:'1rem' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'0.75rem' }}>
-            <div>
-              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:'1rem', fontWeight:600, color:'var(--gray-900)', marginBottom:'0.25rem' }}>{p.name}</div>
-              <code style={{ fontSize:'0.72rem', color:'var(--gray-500)', fontFamily:"'DM Mono',monospace" }}>{p.api_key_prefix}...</code>
+      ) : (
+        <div className="space-y-4">
+          {projects.map(p => (
+            <div key={p.id} className="dash-card">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+                <div>
+                  <div className="font-display text-lg font-semibold text-almost-white">{p.name}</div>
+                  <code className="text-xs text-light-grey-1 font-mono">{p.api_key_prefix}...</code>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs uppercase tracking-wider px-2 py-0.5 rounded ${
+                    p.status === 'active' ? 'bg-dark-grey-3 text-light-grey-2' : 'bg-mid-grey text-almost-white'
+                  }`}>{p.status}</span>
+                  <button onClick={() => del(p.id)} className="text-xs text-light-grey-1 hover:text-light-grey-3 font-mono bg-none border-none">Delete</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
+                {[
+                  ['Pending Balance', `$${(p.pending_balance||0).toFixed(2)}`],
+                  ['Total Earned', `$${(p.total_earned||0).toFixed(2)}`],
+                  ['Total Volume', `$${(p.total_volume_usd||0).toFixed(0)}`],
+                ].map(([l,v]) => (
+                  <div key={l}>
+                    <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-0.5">{l}</div>
+                    <div className="font-display text-base font-semibold text-light-grey-3">{v}</div>
+                  </div>
+                ))}
+              </div>
+              {p.pending_balance >= 50 && p.payout_wallet && (
+                <button
+                  onClick={async () => { await platformService.requestPayout(p.id); toast.success('Payout requested!'); load() }}
+                  className="sw-btn sw-btn-primary text-xs py-1.5 px-3 mt-4"
+                >
+                  Withdraw ${(p.pending_balance||0).toFixed(2)}
+                </button>
+              )}
             </div>
-            <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
-              <span style={{ padding:'0.2rem 0.55rem', background: p.status==='active' ? 'var(--gray-300)' : 'var(--gray-400)', borderRadius:3, fontSize:'0.65rem', letterSpacing:'0.08em', textTransform:'uppercase', color: p.status==='active' ? 'var(--gray-700)' : 'var(--gray-900)' }}>{p.status}</span>
-              <button onClick={() => del(p.id)} style={{ background:'none', border:'none', color:'var(--gray-400)', cursor:'none', fontSize:'0.72rem', fontFamily:"'DM Mono',monospace" }}>Delete</button>
-            </div>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'1rem' }}>
-            {[['Pending Balance',`$${(p.pending_balance||0).toFixed(2)}`],['Total Earned',`$${(p.total_earned||0).toFixed(2)}`],['Total Volume',`$${(p.total_volume_usd||0).toFixed(0)}`]].map(([l,v]) => (
-              <div key={l}><div style={{ fontSize:'0.6rem', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:'0.2rem' }}>{l}</div><div style={{ fontFamily:"'Syne',sans-serif", fontSize:'1rem', fontWeight:600, color:'var(--gray-800)' }}>{v}</div></div>
-            ))}
-          </div>
-          {p.pending_balance >= 50 && p.payout_wallet && (
-            <button onClick={async () => { await platformService.requestPayout(p.id); toast.success('Payout requested!'); load() }}
-              className="sw-btn sw-btn-primary" style={{ marginTop:'0.75rem', fontSize:'0.7rem', padding:'0.4rem 0.85rem' }}>
-              Withdraw ${(p.pending_balance||0).toFixed(2)}
-            </button>
-          )}
+          ))}
         </div>
-      ))}
+      )}
     </div>
   )
 }
@@ -173,13 +248,13 @@ function Projects() {
 function Earnings() {
   return (
     <div>
-      <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.4rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'1.5rem' }}>Earnings</h2>
-      <div className="dash-card" style={{ textAlign:'center', padding:'3rem' }}>
-        <p style={{ color:'var(--gray-500)', fontSize:'0.82rem' }}>Revenue data will appear here as your projects accumulate volume.</p>
-        <div style={{ marginTop:'1.5rem', fontSize:'0.75rem', color:'var(--gray-400)', lineHeight:1.8 }}>
-          Fee structure: 0.15% on all developer-driven transactions<br />
-          Your share: 50% (0.075%)<br />
-          Minimum payout: $50 USD
+      <h2 className="font-display text-xl sm:text-2xl font-bold text-almost-white tracking-tighter mb-6">Earnings</h2>
+      <div className="dash-card text-center py-12">
+        <p className="text-light-grey-1 text-sm">Revenue data will appear here as your projects accumulate volume.</p>
+        <div className="mt-6 text-xs text-light-grey-2 leading-relaxed space-y-1">
+          <div>Fee structure: 0.15% on all developer-driven transactions</div>
+          <div>Your share: 50% (0.075%)</div>
+          <div>Minimum payout: $50 USD</div>
         </div>
       </div>
     </div>
@@ -189,18 +264,21 @@ function Earnings() {
 function Settings() {
   return (
     <div>
-      <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:'1.4rem', fontWeight:700, color:'var(--gray-900)', letterSpacing:'-0.02em', marginBottom:'1.5rem' }}>Settings</h2>
+      <h2 className="font-display text-xl sm:text-2xl font-bold text-almost-white tracking-tighter mb-6">Settings</h2>
       <div className="dash-card">
-        <div style={{ fontSize:'0.7rem', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:'1rem', paddingBottom:'0.75rem', borderBottom:'1px solid var(--gray-300)' }}>Account</div>
-        <p style={{ color:'var(--gray-500)', fontSize:'0.82rem' }}>Sign in via Clerk to manage your account settings, update email, and manage team access.</p>
-        <a href="/auth" className="sw-btn sw-btn-primary" style={{ display:'inline-flex', marginTop:'1rem', fontSize:'0.7rem', padding:'0.5rem 1rem' }}>Sign In</a>
+        <div className="text-xs uppercase tracking-wider text-light-grey-1 pb-2 border-b border-dark-grey-3 mb-4">Account</div>
+        <p className="text-light-grey-1 text-sm mb-4">Sign in via Clerk to manage your account settings, update email, and manage team access.</p>
+        <a href="/auth" className="sw-btn sw-btn-primary inline-flex text-xs py-2 px-4">Sign In</a>
       </div>
     </div>
   )
 }
 
 export default function DeveloperDashboard() {
-  const [active, setActive] = useState('')
+  const location = useLocation()
+  const activePath = location.pathname.split('/').pop() || ''
+  const active = activePath === 'developer' ? '' : activePath
+
   return (
     <Routes>
       <Route path="/" element={<DashLayout active=""><Overview /></DashLayout>} />
