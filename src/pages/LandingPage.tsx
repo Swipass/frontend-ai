@@ -490,7 +490,7 @@ Body:
         <div style={{ maxWidth:1280, margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'1.5rem' }}>
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', fontFamily:"'Syne',sans-serif", fontSize:'1.1rem', fontWeight:800, color:'var(--gray-900)', letterSpacing:'-0.03em', marginBottom:'0.5rem' }}>
-              <div style={{ width:24, height:24, border:'1.5px solid var(--gray-600)', borderRadius:5, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.55rem', color:'var(--gray-600)' }}>SW</div>
+              <div style={{ width:24, height:24, border:'1.5px solid var(--gray-600)', borderRadius:5, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.55rem', color:'var(--gray-600)' }}>SWi</div>
               Swipass
             </div>
             <div style={{ fontSize:'0.75rem', color:'var(--gray-500)' }}>© {new Date().getFullYear()} Swipass. All rights reserved.</div>
