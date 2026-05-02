@@ -17,9 +17,7 @@ export const config = createConfig({
   chains: [mainnet, arbitrum, base, optimism, polygon, avalanche, bsc, gnosis],
   multiInjectedProviderDiscovery: true,
   connectors: [
-    injected({ 
-      shimDisconnect: true 
-    }),
+    injected({ shimDisconnect: true }),
     walletConnect({
       projectId,
       showQrModal: true,
@@ -32,13 +30,13 @@ export const config = createConfig({
     }),
   ],
   transports: {
-    [mainnet.id]: http(),
-    [arbitrum.id]: http(),
-    [base.id]: http(),
-    [optimism.id]: http(),
-    [polygon.id]: http(),
-    [avalanche.id]: http(),
-    [bsc.id]: http(),
-    [gnosis.id]: http(),
+    [mainnet.id]: http('https://cloudflare-eth.com'),
+    [arbitrum.id]: http('https://arb1.arbitrum.io/rpc'),
+    [base.id]: http('https://mainnet.base.org'),
+    [optimism.id]: http('https://mainnet.optimism.io'),
+    [polygon.id]: http('https://polygon-rpc.com'),
+    [avalanche.id]: http('https://api.avax.network/ext/bc/C/rpc'),
+    [bsc.id]: http('https://bsc-dataseed.binance.org'),
+    [gnosis.id]: http('https://rpc.gnosischain.com'),
   },
 })
