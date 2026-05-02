@@ -16,7 +16,7 @@ const chainNameMap: Record<number, string> = {
 }
 
 export function useWallet() {
-  const { address, isConnected, chainId, isConnecting } = useAccount()
+  const { address, isConnected, chainId, isConnecting, chain } = useAccount()
   const { connect, connectors, error: connectError } = useConnect()
   const { disconnect } = useDisconnect()
   const { data: balanceData } = useBalance({ address })
@@ -30,39 +30,34 @@ export function useWallet() {
     }
   }, [connectError])
 
-  // Sync wallet state to zustand store
+  // Sync to store with better fallback
   useEffect(() => {
     if (isConnected && address) {
-      storeConnect(address, chainId || 1, chainNameMap[chainId || 1] || 'Unknown')
+      const currentChainName = chain?.name || chainNameMap[chainId || 1] || 'Unknown'
+      storeConnect(address, chainId || 1, currentChainName)
       if (balanceData?.formatted) setBalance(balanceData.formatted)
-      if (chainId) setChain(chainId, chainNameMap[chainId] || 'Unknown')
+      if (chainId) setChain(chainId, currentChainName)
     } else {
       storeDisconnect()
     }
-  }, [isConnected, address, chainId, balanceData, storeConnect, storeDisconnect, setBalance, setChain])
+  }, [isConnected, address, chainId, chain, balanceData, storeConnect, storeDisconnect, setBalance, setChain])
 
   const connectWallet = useCallback(() => {
     if (connectors.length === 0) {
-      toast.error('No wallet connectors available')
+      toast.error('No wallet connectors available. Refresh page.')
       return
     }
 
-    // On mobile: prefer injected first
-    // On desktop: WalletConnect works well too
     const injectedConnector = connectors.find(c => 
-      c.type === 'injected' || 
-      c.name?.toLowerCase().includes('injected') ||
-      c.name?.toLowerCase().includes('metamask')
+      c.type === 'injected' || c.name?.toLowerCase().includes('injected')
     )
+    const wcConnector = connectors.find(c => c.name?.toLowerCase().includes('walletconnect'))
+    const mmConnector = connectors.find(c => c.name?.toLowerCase().includes('metamask'))
 
-    const walletConnectConnector = connectors.find(c => 
-      c.name?.toLowerCase().includes('walletconnect')
-    )
+    const preferred = injectedConnector || mmConnector || wcConnector || connectors[0]
 
-    const preferredConnector = injectedConnector || walletConnectConnector || connectors[0]
-
-    console.log('[Wallet] Connecting with:', preferredConnector.name)
-    connect({ connector: preferredConnector })
+    console.log('[Wallet] Attempting to connect with:', preferred.name)
+    connect({ connector: preferred })
   }, [connectors, connect])
 
   return {
@@ -74,5 +69,6 @@ export function useWallet() {
     connect: connectWallet,
     disconnect,
     switchChain,
+    chainName: chain?.name || chainNameMap[chainId || 1] || 'Unknown',
   }
 }

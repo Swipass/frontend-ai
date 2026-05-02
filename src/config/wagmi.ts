@@ -3,10 +3,10 @@ import { http, createConfig } from 'wagmi'
 import { mainnet, arbitrum, base, optimism, polygon, avalanche, bsc, gnosis } from 'wagmi/chains'
 import { injected, walletConnect, metaMask } from 'wagmi/connectors'
 
-const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID?.trim()
 
 if (!projectId) {
-  console.error('Missing VITE_WALLETCONNECT_PROJECT_ID environment variable')
+  console.error('Missing or empty VITE_WALLETCONNECT_PROJECT_ID')
 }
 
 const appUrl = typeof window !== 'undefined' 
@@ -15,13 +15,12 @@ const appUrl = typeof window !== 'undefined'
 
 export const config = createConfig({
   chains: [mainnet, arbitrum, base, optimism, polygon, avalanche, bsc, gnosis],
+  multiInjectedProviderDiscovery: true,   // Important for mobile
   connectors: [
-    // Injected wallets (MetaMask, Trust Wallet, etc. in mobile browsers) - highest priority for mobile
     injected({ 
-      shimDisconnect: true 
+      shimDisconnect: true,
+      target: 'metaMask' 
     }),
-
-    // WalletConnect for QR code + mobile deep linking
     walletConnect({
       projectId,
       showQrModal: true,
@@ -32,8 +31,6 @@ export const config = createConfig({
         icons: ['https://swipass.com/logo192.png'],
       },
     }),
-
-    // Explicit MetaMask support
     metaMask({
       dappMetadata: {
         name: 'Swipass',

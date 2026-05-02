@@ -249,8 +249,12 @@ function NetworkDropdown({
 function WalletPanelContent({
   isConnected, address, balance, chainName, connect, disconnect,
 }: {
-  isConnected: boolean; address?: string; balance: string; chainName: string;
-  connect: () => void; disconnect: () => void
+  isConnected: boolean; 
+  address?: string; 
+  balance: string; 
+  chainName: string;
+  connect: () => void; 
+  disconnect: () => void
 }) {
   if (!isConnected) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -274,12 +278,12 @@ function WalletPanelContent({
         <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.surface2, border: `1px solid ${C.mid}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: C.muted, flexShrink: 0 }}>◈</div>
         <div>
           <div style={{ fontSize: '0.78rem', color: C.label }}>{address?.slice(0, 6)}...{address?.slice(-4)}</div>
-          <div style={{ fontSize: '0.65rem', color: C.muted }}>via WalletConnect</div>
+          <div style={{ fontSize: '0.65rem', color: C.muted }}>Connected • {chainName}</div>
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
         <span style={{ ...displayFont, fontSize: '1.6rem', fontWeight: 700, color: C.max, letterSpacing: '-0.03em' }}>{parseFloat(balance || '0').toFixed(4)}</span>
-        <span style={{ fontSize: '0.75rem', color: C.muted }}>{chainName === 'Ethereum' ? 'ETH' : chainName === 'BNB Chain' ? 'BNB' : chainName}</span>
+        <span style={{ fontSize: '0.75rem', color: C.muted }}>{chainName}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.65rem', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, fontSize: '0.65rem', color: C.body }}>
