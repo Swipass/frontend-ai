@@ -30,7 +30,7 @@ export function useWallet() {
     }
   }, [connectError])
 
-  // Sync to store
+  // Sync wallet state to zustand store
   useEffect(() => {
     if (isConnected && address) {
       storeConnect(address, chainId || 1, chainNameMap[chainId || 1] || 'Unknown')
@@ -43,22 +43,26 @@ export function useWallet() {
 
   const connectWallet = useCallback(() => {
     if (connectors.length === 0) {
-      toast.error('No connectors available')
+      toast.error('No wallet connectors available')
       return
     }
 
-    // Priority: Injected (mobile browser) → WalletConnect
-    const injectedConn = connectors.find(c => 
-      c.name?.toLowerCase().includes('injected') || 
-      c.type === 'injected'
+    // On mobile: prefer injected first
+    // On desktop: WalletConnect works well too
+    const injectedConnector = connectors.find(c => 
+      c.type === 'injected' || 
+      c.name?.toLowerCase().includes('injected') ||
+      c.name?.toLowerCase().includes('metamask')
     )
-    
-    const wcConn = connectors.find(c => c.name?.toLowerCase().includes('walletconnect'))
-    
-    const preferred = injectedConn || wcConn || connectors[0]
-    
-    console.log('Connecting with:', preferred.name)
-    connect({ connector: preferred })
+
+    const walletConnectConnector = connectors.find(c => 
+      c.name?.toLowerCase().includes('walletconnect')
+    )
+
+    const preferredConnector = injectedConnector || walletConnectConnector || connectors[0]
+
+    console.log('[Wallet] Connecting with:', preferredConnector.name)
+    connect({ connector: preferredConnector })
   }, [connectors, connect])
 
   return {

@@ -11,18 +11,17 @@ if (!projectId) {
 
 const appUrl = typeof window !== 'undefined' 
   ? window.location.origin 
-  : 'https://swipass.xyz'
+  : 'https://swipass.com'
 
 export const config = createConfig({
   chains: [mainnet, arbitrum, base, optimism, polygon, avalanche, bsc, gnosis],
   connectors: [
-    // Injected first — best for mobile browsers (MetaMask, Trust, etc.)
+    // Injected wallets (MetaMask, Trust Wallet, etc. in mobile browsers) - highest priority for mobile
     injected({ 
-      shimDisconnect: true,
-      target: 'metaMask' // helps with common mobile injected wallets
+      shimDisconnect: true 
     }),
-    
-    // WalletConnect for QR + deep linking
+
+    // WalletConnect for QR code + mobile deep linking
     walletConnect({
       projectId,
       showQrModal: true,
@@ -30,10 +29,11 @@ export const config = createConfig({
         name: 'Swipass',
         description: 'Universal Cross-Chain Intent & Execution Platform',
         url: appUrl,
-        icons: ['https://swipass.xyz/logo192.png'], // use a real icon if possible
+        icons: ['https://swipass.com/logo192.png'],
       },
     }),
 
+    // Explicit MetaMask support
     metaMask({
       dappMetadata: {
         name: 'Swipass',
