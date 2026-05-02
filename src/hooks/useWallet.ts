@@ -1,3 +1,4 @@
+// src/hooks/useWallet.ts  (or wherever it's defined — update the full file)
 import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain } from 'wagmi'
 import { useEffect } from 'react'
 import toast from 'react-hot-toast'
@@ -45,7 +46,14 @@ export function useWallet() {
       toast.error('No wallet connector available')
       return
     }
-    connect({ connector: connectors[0] })
+
+    // Prefer injected on mobile, fallback to WalletConnect
+    const injectedConnector = connectors.find(c => c.name?.toLowerCase().includes('injected') || c.type === 'injected')
+    const wcConnector = connectors.find(c => c.name?.toLowerCase().includes('walletconnect'))
+
+    const preferred = injectedConnector || wcConnector || connectors[0]
+    
+    connect({ connector: preferred })
   }
 
   return {
