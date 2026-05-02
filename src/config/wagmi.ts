@@ -25,7 +25,7 @@ export const config = createConfig({
         name: 'Swipass',
         description: 'Universal Cross-Chain Intent & Execution Platform',
         url: appUrl,
-        icons: ['https://swipass.com/logo192.png'],
+        icons: ['https://swipass.com/android-chrome-192x192.png'],
       },
     }),
   ],
