@@ -9,30 +9,31 @@ if (!projectId) {
   console.error('Missing VITE_WALLETCONNECT_PROJECT_ID environment variable')
 }
 
-// Use the actual deployed URL or localhost
-const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://swipass.com'
+const appUrl = typeof window !== 'undefined' 
+  ? window.location.origin 
+  : 'https://swipass.xyz'
 
 export const config = createConfig({
   chains: [mainnet, arbitrum, base, optimism, polygon, avalanche, bsc, gnosis],
   connectors: [
-    // Injected wallets (MetaMask, Trust Wallet, Rainbow, etc. in mobile browsers)
+    // Injected first — best for mobile browsers (MetaMask, Trust, etc.)
     injected({ 
-      shimDisconnect: true 
+      shimDisconnect: true,
+      target: 'metaMask' // helps with common mobile injected wallets
     }),
     
-    // WalletConnect (QR + deep linking for mobile apps)
+    // WalletConnect for QR + deep linking
     walletConnect({
       projectId,
       showQrModal: true,
       metadata: {
         name: 'Swipass',
-        description: 'Universal cross-chain intent execution',
+        description: 'Universal Cross-Chain Intent & Execution Platform',
         url: appUrl,
-        icons: [], // leave empty to avoid missing file errors
+        icons: ['https://swipass.xyz/logo192.png'], // use a real icon if possible
       },
     }),
 
-    // Explicit MetaMask connector (improves mobile detection)
     metaMask({
       dappMetadata: {
         name: 'Swipass',

@@ -1,6 +1,6 @@
-// src/hooks/useWallet.ts  (or wherever it's defined — update the full file)
+// src/hooks/useWallet.ts
 import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain } from 'wagmi'
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { useWalletStore } from '../store/walletStore'
 
@@ -23,38 +23,43 @@ export function useWallet() {
   const { switchChain } = useSwitchChain()
   const { connect: storeConnect, disconnect: storeDisconnect, setBalance, setChain } = useWalletStore()
 
-  // Show connection errors
   useEffect(() => {
     if (connectError) {
-      toast.error(connectError.message)
+      console.error('Wallet connect error:', connectError)
+      toast.error(connectError.message || 'Failed to connect wallet')
     }
   }, [connectError])
 
-  // Sync wallet state to zustand store
+  // Sync to store
   useEffect(() => {
     if (isConnected && address) {
       storeConnect(address, chainId || 1, chainNameMap[chainId || 1] || 'Unknown')
-      if (balanceData) setBalance(balanceData.formatted)
+      if (balanceData?.formatted) setBalance(balanceData.formatted)
       if (chainId) setChain(chainId, chainNameMap[chainId] || 'Unknown')
     } else {
       storeDisconnect()
     }
   }, [isConnected, address, chainId, balanceData, storeConnect, storeDisconnect, setBalance, setChain])
 
-  const connectWallet = () => {
+  const connectWallet = useCallback(() => {
     if (connectors.length === 0) {
-      toast.error('No wallet connector available')
+      toast.error('No connectors available')
       return
     }
 
-    // Prefer injected on mobile, fallback to WalletConnect
-    const injectedConnector = connectors.find(c => c.name?.toLowerCase().includes('injected') || c.type === 'injected')
-    const wcConnector = connectors.find(c => c.name?.toLowerCase().includes('walletconnect'))
-
-    const preferred = injectedConnector || wcConnector || connectors[0]
+    // Priority: Injected (mobile browser) → WalletConnect
+    const injectedConn = connectors.find(c => 
+      c.name?.toLowerCase().includes('injected') || 
+      c.type === 'injected'
+    )
     
+    const wcConn = connectors.find(c => c.name?.toLowerCase().includes('walletconnect'))
+    
+    const preferred = injectedConn || wcConn || connectors[0]
+    
+    console.log('Connecting with:', preferred.name)
     connect({ connector: preferred })
-  }
+  }, [connectors, connect])
 
   return {
     address,
