@@ -15,7 +15,8 @@
     "@clerk/clerk-react": "^5.61.5",
     "@react-three/drei": "^9.105.6",
     "@react-three/fiber": "^8.16.8",
-    "@tanstack/react-query": "^5.99.2",
+    "@tanstack/react-query": "^5.100.8",
+    "@web3modal/wagmi": "^5.1.11",
     "axios": "^1.7.2",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
@@ -26,8 +27,8 @@
     "react-router-dom": "^6.23.1",
     "recharts": "^2.12.7",
     "three": "^0.165.0",
-    "viem": "^2.48.4",
-    "wagmi": "^3.6.4",
+    "viem": "^2.48.8",
+    "wagmi": "^3.6.9",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
