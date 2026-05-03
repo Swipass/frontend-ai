@@ -41,14 +41,14 @@ const QUICK_COMMANDS = [
 ]
 
 const EXPLORERS: Record<number, string> = {
-  1: 'https://etherscan.io/tx/',
+  1:     'https://etherscan.io/tx/',
   42161: 'https://arbiscan.io/tx/',
-  8453: 'https://basescan.org/tx/',
-  10: 'https://optimistic.etherscan.io/tx/',
-  137: 'https://polygonscan.com/tx/',
+  8453:  'https://basescan.org/tx/',
+  10:    'https://optimistic.etherscan.io/tx/',
+  137:   'https://polygonscan.com/tx/',
   43114: 'https://snowtrace.io/tx/',
-  56: 'https://bscscan.com/tx/',
-  100: 'https://gnosisscan.io/tx/',
+  56:    'https://bscscan.com/tx/',
+  100:   'https://gnosisscan.io/tx/',
 }
 
 const CHAIN_IDS: Record<string, number> = {
@@ -290,12 +290,19 @@ export default function AppPage() {
 
     setConfirming(true)
     try {
+      // Fix: handle both hex (0x…) and decimal value strings
       let value: bigint
-      try {
-        value = parseEther(tx.value || '0')
-      } catch {
-        value = parseUnits(tx.value || '0', 18)
+      const rawValue = tx.value || '0'
+      if (rawValue.startsWith('0x')) {
+        value = BigInt(rawValue)
+      } else {
+        try {
+          value = parseEther(rawValue)
+        } catch {
+          value = parseUnits(rawValue, 18)
+        }
       }
+
       const hash = await sendTransactionAsync({
         to: tx.to as `0x${string}`,
         data: tx.data as `0x${string}`,
@@ -618,9 +625,7 @@ export default function AppPage() {
 
       {!loading && !result && (
         <div>
-          <div
-            style={{ ...uppercaseLabel, marginBottom: '0.6rem', display: 'block' }}
-          >
+          <div style={{ ...uppercaseLabel, marginBottom: '0.6rem', display: 'block' }}>
             Quick Commands
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
