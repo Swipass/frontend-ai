@@ -1,6 +1,6 @@
 // src/hooks/useWallet.ts
 import { useAccount, useDisconnect, useBalance, useSwitchChain } from 'wagmi'
-import { useWeb3Modal } from '@web3modal/wagmi'
+import { useWeb3Modal } from '@web3modal/wagmi/react'   // ← Correct import
 import { useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useWalletStore } from '../store/walletStore'
