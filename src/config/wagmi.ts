@@ -1,8 +1,7 @@
 // src/config/wagmi.ts
-import { createConfig, http } from 'wagmi'
+import { http, createConfig } from 'wagmi'
 import { mainnet, arbitrum, base, optimism, polygon, avalanche, bsc, gnosis } from 'wagmi/chains'
 import { injected, walletConnect } from 'wagmi/connectors'
-import { createWeb3Modal } from '@web3modal/wagmi'
 
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID?.trim()
 
@@ -14,9 +13,19 @@ const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https:/
 
 export const config = createConfig({
   chains: [mainnet, arbitrum, base, optimism, polygon, avalanche, bsc, gnosis],
+  multiInjectedProviderDiscovery: true,
   connectors: [
     injected({ shimDisconnect: true }),
-    walletConnect({ projectId }),
+    walletConnect({
+      projectId,
+      showQrModal: true,
+      metadata: {
+        name: 'Swipass',
+        description: 'Universal Cross-Chain Intent & Execution Platform',
+        url: appUrl,
+        icons: ['https://swipass.com/android-chrome-192x192.png'],
+      },
+    }),
   ],
   transports: {
     [mainnet.id]: http('https://cloudflare-eth.com'),
@@ -28,11 +37,4 @@ export const config = createConfig({
     [bsc.id]: http('https://bsc-dataseed.binance.org'),
     [gnosis.id]: http('https://rpc.gnosischain.com'),
   },
-})
-
-// Initialize Web3Modal
-createWeb3Modal({
-  wagmiConfig: config,
-  projectId,
-  themeMode: 'dark',
 })

@@ -11,17 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // Increased to 4MB
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: { 
-              cacheName: 'google-fonts-cache', 
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } 
-            }
-          }
-        ]
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+        disableWorkbox: false,
       },
       manifest: {
         name: 'Swipass',
@@ -39,11 +30,18 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    chunkSizeWarningLimit: 3000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'web3': ['wagmi', 'viem', '@web3modal/wagmi']
+        }
+      }
+    }
+  },
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') }
-  },
-  build: {
-    chunkSizeWarningLimit: 2000, // Suppress large chunk warning
   },
   server: {
     port: 5173,
