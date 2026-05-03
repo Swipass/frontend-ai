@@ -12,7 +12,6 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
-        disableWorkbox: false,
       },
       manifest: {
         name: 'Swipass',
@@ -32,13 +31,6 @@ export default defineConfig({
   ],
   build: {
     chunkSizeWarningLimit: 3000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'web3': ['wagmi', 'viem', '@web3modal/wagmi']
-        }
-      }
-    }
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') }
