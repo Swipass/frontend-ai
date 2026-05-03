@@ -564,12 +564,20 @@ export default function AppPage() {
 
   useEffect(() => {
     if (txSuccess && receipt && histId) {
+      // Check if it was an approval (first 4 bytes = 0x095ea7b3)
+      const txData = result?.transaction?.data || ''
+      if (txData.startsWith('0x095ea7b3')) {
+        toast.success('Token approved. Now sign the swap transaction.')
+        updateCommand(histId, { status: 'pending' })
+        setConfirming(false)
+        return // don't show success overlay
+      }
       setShowSuccess(true)
       updateCommand(histId, { status: 'completed', txHash: receipt.transactionHash })
       toast.success('Transaction settled!')
       setConfirming(false)
     }
-  }, [txSuccess, receipt, histId, updateCommand])
+  }, [txSuccess, receipt, histId, updateCommand, result])
 
   // 🔥 Helper to switch network when a chain is selected
   const handleNetworkSwitch = async (idx: number) => {
@@ -581,7 +589,6 @@ export default function AppPage() {
         await switchChainAsync({ chainId: targetChainId })
       } catch (err: any) {
         toast.error(err.message || 'Failed to switch network')
-        // Still update UI even if switch fails
       }
     }
     setFromChainIdx(idx)
@@ -955,10 +962,10 @@ export default function AppPage() {
                 </button>
                 {networkDropdown && !chainsLoading && (
                   <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, minWidth: 180, zIndex: 200, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-                    {displayChains.map(async (chain, idx) => (
-                      <button key={chain} onClick={async () => {
-                        await handleNetworkSwitch(idx)
-                        setNetworkDropdown(false)
+                    {displayChains.map((chain, idx) => (
+                      <button key={chain} onClick={() => {
+                        handleNetworkSwitch(idx);
+                        setNetworkDropdown(false);
                       }}
                         style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 1rem', fontSize: '0.72rem', color: fromChainIdx === idx ? C.max : C.body, background: fromChainIdx === idx ? C.surface : 'none', width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, cursor: 'pointer', fontFamily: "'DM Mono',monospace", transition: 'background 0.2s' }}>
                         <PulseDot connected={fromChainIdx === idx} />
