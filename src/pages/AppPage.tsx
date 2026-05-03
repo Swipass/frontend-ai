@@ -29,6 +29,18 @@ const EXPLORERS: Record<number, string> = {
   100:   'https://gnosisscan.io/tx/',
 }
 
+// Chain name → Chain ID mapping (must match wagmi chains)
+const CHAIN_IDS: Record<string, number> = {
+  ethereum: 1,
+  arbitrum: 42161,
+  base: 8453,
+  optimism: 10,
+  polygon: 137,
+  avalanche: 43114,
+  bsc: 56,
+  gnosis: 100,
+}
+
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
@@ -559,6 +571,22 @@ export default function AppPage() {
     }
   }, [txSuccess, receipt, histId, updateCommand])
 
+  // 🔥 Helper to switch network when a chain is selected
+  const handleNetworkSwitch = async (idx: number) => {
+    const chainNameLower = chains[idx]?.toLowerCase()
+    const targetChainId = chainNameLower ? CHAIN_IDS[chainNameLower] : undefined
+
+    if (targetChainId && switchChainAsync && targetChainId !== chainId) {
+      try {
+        await switchChainAsync({ chainId: targetChainId })
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to switch network')
+        // Still update UI even if switch fails
+      }
+    }
+    setFromChainIdx(idx)
+  }
+
   const handleSubmit = useCallback(async () => {
     if (!command.trim() || loading || chainsLoading) return
     setLoading(true)
@@ -592,7 +620,7 @@ export default function AppPage() {
     const tx = result.transaction
     if (!tx?.to) { toast.error('Invalid transaction data'); return }
 
-    // === AUTO SWITCH CHAIN ===
+    // Auto‑switch chain if the wallet is on the wrong network
     if (chainId !== tx.chain_id) {
       try {
         toast.loading(`Switching network to ${tx.chain_name || 'required chain'}...`, { id: 'switch' })
@@ -884,7 +912,10 @@ export default function AppPage() {
 
           <BottomSheet open={sheetNetwork} onClose={() => setSheetNetwork(false)} title="Select Network" maxHeight="75vh">
             {displayChains.map((chain, idx) => (
-              <button key={chain} onClick={() => { setFromChainIdx(idx); setSheetNetwork(false) }}
+              <button key={chain} onClick={async () => {
+                await handleNetworkSwitch(idx)
+                setSheetNetwork(false)
+              }}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.9rem 0', width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, background: 'none', color: fromChainIdx === idx ? C.max : C.body, fontFamily: "'DM Mono',monospace", fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left' }}>
                 <PulseDot connected={fromChainIdx === idx} size={7} />
                 {chain}
@@ -924,8 +955,11 @@ export default function AppPage() {
                 </button>
                 {networkDropdown && !chainsLoading && (
                   <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, minWidth: 180, zIndex: 200, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-                    {displayChains.map((chain, idx) => (
-                      <button key={chain} onClick={() => { setFromChainIdx(idx); setNetworkDropdown(false) }}
+                    {displayChains.map(async (chain, idx) => (
+                      <button key={chain} onClick={async () => {
+                        await handleNetworkSwitch(idx)
+                        setNetworkDropdown(false)
+                      }}
                         style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 1rem', fontSize: '0.72rem', color: fromChainIdx === idx ? C.max : C.body, background: fromChainIdx === idx ? C.surface : 'none', width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, cursor: 'pointer', fontFamily: "'DM Mono',monospace", transition: 'background 0.2s' }}>
                         <PulseDot connected={fromChainIdx === idx} />
                         {chain}
