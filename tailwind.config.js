@@ -18,7 +18,7 @@ export default {
         'almost-white': '#f5f5f5',
       },
       fontFamily: {
-        display: ['Syne', 'sans-serif'],
+        display: ['Outfit', 'sans-serif'],
         body: ['DM Mono', 'monospace'],
         serif: ['Instrument Serif', 'serif'],
       },
