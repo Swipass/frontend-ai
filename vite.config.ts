@@ -11,11 +11,15 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // Increased to 4MB
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
-            options: { cacheName: 'google-fonts-cache', expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } }
+            options: { 
+              cacheName: 'google-fonts-cache', 
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } 
+            }
           }
         ]
       },
@@ -37,6 +41,9 @@ export default defineConfig({
   ],
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') }
+  },
+  build: {
+    chunkSizeWarningLimit: 2000, // Suppress large chunk warning
   },
   server: {
     port: 5173,
