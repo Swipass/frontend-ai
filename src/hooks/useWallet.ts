@@ -1,5 +1,5 @@
 // src/hooks/useWallet.ts
-import { useAccount, useBalance } from 'wagmi'
+import { useAccount, useBalance, useSwitchChain } from 'wagmi'
 import { useEffect } from 'react'
 import { useWalletStore } from '../store/walletStore'
 
@@ -11,6 +11,7 @@ const chainNameMap: Record<number, string> = {
 export function useWallet() {
   const { address, isConnected, chainId, chain } = useAccount()
   const { data: balanceData } = useBalance({ address })
+  const { switchChainAsync } = useSwitchChain()
   const { connect: storeConnect, disconnect: storeDisconnect, setBalance, setChain } = useWalletStore()
 
   useEffect(() => {
@@ -30,5 +31,6 @@ export function useWallet() {
     chainId,
     balance: balanceData?.formatted || '0',
     chainName: chain?.name || chainNameMap[chainId || 1] || 'Ethereum',
+    switchChainAsync,   // ← now available for automatic chain switching
   }
 }

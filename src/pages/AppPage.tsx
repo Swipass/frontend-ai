@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi'
+import { useSendTransaction, useWaitForTransactionReceipt, useConnect } from 'wagmi'
 import { parseEther, parseUnits } from 'viem'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { intentService, IntentResponse, QuoteResponse } from '../services/intentService'
@@ -255,26 +255,49 @@ function WalletPanelContent({
   balance: string;
   chainName: string;
 }) {
+  const { connectAsync, connectors } = useConnect();
+
+  const handleConnect = useCallback(async () => {
+    const injectedConnector = connectors.find(c => c.id === 'injected');
+    const wcConnector = connectors.find(c => c.id === 'walletConnect');
+
+    // Try browser extension first (MetaMask, Nightly, etc.)
+    if (injectedConnector) {
+      try {
+        await connectAsync({ connector: injectedConnector });
+        return;
+      } catch {
+        // injected failed, fall through to WalletConnect modal
+      }
+    }
+
+    // WalletConnect (works for both desktop & mobile)
+    if (wcConnector) {
+      try {
+        await connectAsync({ connector: wcConnector });
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to connect wallet');
+      }
+    } else {
+      toast.error('No wallet connector available');
+    }
+  }, [connectors, connectAsync]);
+
   if (!isConnected) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <p style={{ fontSize: '0.82rem', color: C.muted, lineHeight: 1.65, margin: 0 }}>
           Connect your wallet to start executing cross-chain transactions. No account required.
         </p>
-        <ConnectButton.Custom>
-          {({ openConnectModal }) => (
-            <button
-              onClick={openConnectModal}
-              style={{
-                width: '100%', padding: '0.85rem', background: C.max, color: C.bg,
-                border: 'none', borderRadius: 6, fontFamily: "'DM Mono',monospace",
-                fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase',
-                cursor: 'pointer'
-              }}>
-              Connect Wallet
-            </button>
-          )}
-        </ConnectButton.Custom>
+        <button onClick={handleConnect}
+          style={{
+            width: '100%', padding: '0.85rem', background: C.max, color: C.bg,
+            border: 'none', borderRadius: 6, fontFamily: "'DM Mono',monospace",
+            fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase',
+            cursor: 'pointer'
+          }}>
+          Connect Wallet
+        </button>
         <div style={{ display: 'flex', gap: '0.5rem', padding: '0.65rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 5, fontSize: '0.72rem', color: C.muted, lineHeight: 1.5 }}>
           <Icon.Shield size={13} />
           Non-custodial. Your keys stay in your wallet.
@@ -515,7 +538,7 @@ function ConfirmButton({
 // ─── Main component ───────────────────────────────────────────
 export default function AppPage() {
   const { commandHistory, addCommand, updateCommand } = useAppStore()
-  const { address, isConnected, chainName, balance, chainId } = useWallet()  // removed connect/disconnect
+  const { address, isConnected, chainName, balance, chainId, switchChainAsync } = useWallet()
 
   const [command, setCommand]             = useState('')
   const [loading, setLoading]             = useState(false)
@@ -609,9 +632,24 @@ export default function AppPage() {
     if (!result || !address) { toast.error('Wallet not connected'); return }
     const tx = result.transaction
     if (!tx?.to) { toast.error('Invalid transaction data'); return }
+
+    // Auto‑switch chain if the wallet is on the wrong network
     if (chainId !== tx.chain_id) {
-      toast.error(`Switch wallet to ${tx.chain_name || 'required chain'} (Chain ID: ${tx.chain_id})`); return
+      if (switchChainAsync) {
+        try {
+          toast.loading(`Switching network to ${tx.chain_name || 'required chain'}...`, { id: 'switch' })
+          await switchChainAsync({ chainId: tx.chain_id })
+          toast.success('Network switched. Please confirm again.', { id: 'switch' })
+        } catch (err: any) {
+          toast.error(err.message || 'Failed to switch network', { id: 'switch' })
+        }
+        return
+      } else {
+        toast.error(`Switch wallet to ${tx.chain_name || 'required chain'} (Chain ID: ${tx.chain_id})`)
+        return
+      }
     }
+
     setConfirming(true)
     try {
       let value: bigint

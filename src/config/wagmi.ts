@@ -3,6 +3,7 @@ import '@rainbow-me/rainbowkit/styles.css'
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { http } from 'wagmi'
 import { mainnet, arbitrum, base, optimism, polygon, avalanche, bsc, gnosis } from 'wagmi/chains'
+import { injected, walletConnect } from 'wagmi/connectors'
 
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID?.trim()
 
@@ -10,7 +11,6 @@ if (!projectId) {
   console.error('Missing VITE_WALLETCONNECT_PROJECT_ID')
 }
 
-// Always use the current origin – works for any domain (localhost, swipass.com, etc.)
 const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://swipass.com'
 
 export const config = getDefaultConfig({
@@ -30,11 +30,27 @@ export const config = getDefaultConfig({
   appIcon: `${appUrl}/android-chrome-192x192.png`,
   appDescription: 'Universal Cross-Chain Intent & Execution Platform',
 
-  // 🔥 This is what was missing – tells wallets how to get back to your dapp
+  // 🌐 Mobile deep‑link back to your app
   walletConnectParameters: {
     redirect: {
-      universal: appUrl,   // fallback URL for any wallet
-      // native: 'swipass://',   // only needed if you have a native app
+      universal: appUrl,
     },
   },
+
+  // 🔥 Explicitly declare connectors – injected must be first
+  connectors: [
+    injected({ shimDisconnect: true }),
+    walletConnect({
+      projectId,
+      metadata: {
+        name: 'Swipass',
+        description: 'Universal Cross-Chain Intent & Execution Platform',
+        url: appUrl,
+        icons: [`${appUrl}/android-chrome-192x192.png`],
+      },
+      redirect: {
+        universal: appUrl,
+      },
+    }),
+  ],
 })
