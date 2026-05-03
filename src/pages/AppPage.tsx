@@ -100,6 +100,9 @@ export default function AppPage() {
   const [sheetNetwork, setSheetNetwork] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
+  // Warning timer for long pending transactions
+  const [pendingWarning, setPendingWarning] = useState(false)
+
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { isRecording, transcript, error: voiceError, startRecording, stopRecording } =
@@ -142,17 +145,33 @@ export default function AppPage() {
     if (transcript) setCommand(transcript)
   }, [transcript])
 
+  // Reset pending warning when tx starts waiting
+  useEffect(() => {
+    if (isWaiting && txHash) {
+      setPendingWarning(false)
+      const timer = setTimeout(() => setPendingWarning(true), 30_000)
+      return () => clearTimeout(timer)
+    }
+  }, [isWaiting, txHash])
+
   useEffect(() => {
     if (txSuccess && receipt && histId) {
       const txData = currentTransaction?.data || ''
+      // Skip approval tx – do not show success overlay
       if (txData.startsWith('0x095ea7b3')) {
         toast.success('Approval confirmed. Please sign the next transaction.')
         setConfirming(false)
         return
       }
-      setShowSuccess(true)
-      updateCommand(histId, { status: 'completed', txHash: receipt.transactionHash })
-      toast.success('Transaction settled!')
+      // Check actual on‑chain status (status = 1 means success)
+      if (receipt.status === 'success') {
+        setShowSuccess(true)
+        updateCommand(histId, { status: 'completed', txHash: receipt.transactionHash })
+        toast.success('Transaction settled!')
+      } else {
+        updateCommand(histId, { status: 'failed' })
+        toast.error('Transaction reverted on‑chain')
+      }
       setConfirming(false)
     }
   }, [txSuccess, receipt, histId, updateCommand, currentTransaction])
@@ -290,7 +309,7 @@ export default function AppPage() {
 
     setConfirming(true)
     try {
-      // Fix: handle both hex (0x…) and decimal value strings
+      // Value can be hex or decimal
       let value: bigint
       const rawValue = tx.value || '0'
       if (rawValue.startsWith('0x')) {
@@ -303,14 +322,20 @@ export default function AppPage() {
         }
       }
 
+      // Build gas parameters from provider quote (important for LI.FI)
+      const gasParams: Record<string, any> = {}
+      if (tx.gas_limit) gasParams.gas = BigInt(tx.gas_limit)
+      if (tx.max_fee_per_gas) gasParams.maxFeePerGas = BigInt(tx.max_fee_per_gas)
+      if (tx.max_priority_fee_per_gas) gasParams.maxPriorityFeePerGas = BigInt(tx.max_priority_fee_per_gas)
+
       const hash = await sendTransactionAsync({
         to: tx.to as `0x${string}`,
         data: tx.data as `0x${string}`,
         value,
-        gas: tx.gas_limit ? BigInt(tx.gas_limit) : undefined,
+        ...gasParams,
       })
       setTxHash(hash)
-      toast.loading('Transaction broadcasted. Waiting for confirmation...', { id: 'tx' })
+      toast.loading('Transaction submitted. Waiting for confirmation...', { id: 'tx' })
     } catch (err: any) {
       toast.error(err.message || 'Transaction failed')
       setConfirming(false)
@@ -652,6 +677,25 @@ export default function AppPage() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Warning if pending for too long */}
+      {pendingWarning && txHash && (
+        <div
+          style={{
+            padding: '0.6rem 0.75rem',
+            background: '#5c4a1f',
+            border: '1px solid #b08d2a',
+            borderRadius: 5,
+            fontSize: '0.68rem',
+            color: '#f0d07e',
+            lineHeight: 1.5,
+          }}
+        >
+          <Icon.Warning size={12} /> Transaction is taking longer than usual.
+          It may be stuck due to network congestion or low gas.
+          You can speed up or cancel in your wallet.
         </div>
       )}
     </div>
