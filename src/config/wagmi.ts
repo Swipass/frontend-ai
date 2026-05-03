@@ -30,13 +30,9 @@ export const config = createConfig({
   },
 })
 
-// Create Web3Modal instance (add this)
+// Initialize Web3Modal
 createWeb3Modal({
   wagmiConfig: config,
   projectId,
   themeMode: 'dark',
-  themeVariables: {
-    '--w3m-font-family': 'DM Mono, monospace',
-    '--w3m-accent': '#ffffff',
-  },
 })
