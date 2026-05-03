@@ -21,6 +21,16 @@ export interface QuoteResponse {
   estimated_time_seconds: number
   estimated_gas_usd: string
   score: number
+  quote_id: string
+}
+
+export interface TransactionPayload {
+  to: string
+  data: string
+  value: string
+  gas_limit: string
+  chain_id: number
+  chain_name: string
 }
 
 export interface IntentResponse {
@@ -28,7 +38,7 @@ export interface IntentResponse {
   parsed_intent: any
   selected_provider: string
   quote: QuoteResponse
-  transaction: any
+  transaction: TransactionPayload
   all_quotes: QuoteResponse[]
   destination_address?: string
   destination_note: string
@@ -49,6 +59,22 @@ export const intentService = {
     headers?: Record<string, string>
   ): Promise<IntentResponse> {
     const res = await apiClient.post('/v1/intent', req, { headers })
+    return res.data
+  },
+
+  async buildTransaction(
+    quote: QuoteResponse,
+    walletAddress: string
+  ): Promise<TransactionPayload> {
+    const res = await apiClient.post(
+      '/v1/intent/build-transaction',
+      quote,
+      {
+        headers: {
+          'X-Wallet-Address': walletAddress,
+        },
+      }
+    )
     return res.data
   },
 

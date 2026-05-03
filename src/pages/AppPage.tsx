@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, parseUnits } from 'viem'
-import { intentService, IntentResponse, QuoteResponse } from '../services/intentService'
+import { intentService, IntentResponse, QuoteResponse, TransactionPayload } from '../services/intentService'
 import { useAppStore } from '../store/appStore'
 import { useWallet } from '../hooks/useWallet'
 import { useVoiceInput } from '../hooks/useVoiceInput'
@@ -444,37 +444,62 @@ function HistoryContent({ commandHistory }: { commandHistory: any[] }) {
   )
 }
 
-// ─── Provider Comparison Table ─────────────────────────────────
-function ProviderTable({ result }: { result: IntentResponse }) {
+// ─── Provider Comparison Table (now selectable) ─────────────────
+function ProviderTable({
+  result,
+  selectedProvider,
+  onSelectProvider,
+}: {
+  result: IntentResponse;
+  selectedProvider: string;
+  onSelectProvider: (provider: string) => void;
+}) {
   return (
     <div style={{ marginTop: '1rem' }}>
-      <div style={{ ...uppercaseLabel, marginBottom: '0.6rem', display: 'block', fontSize: '0.6rem', letterSpacing: '0.12em' }}>Provider Quotes — Best Selected</div>
+      <div style={{ ...uppercaseLabel, marginBottom: '0.6rem', display: 'block', fontSize: '0.6rem', letterSpacing: '0.12em' }}>
+        Provider Quotes — Select one to execute
+      </div>
       <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 0.8fr 0.7fr 1fr', padding: '0.5rem 1rem', background: C.surface, fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted, ...borderBottom }}>
-          {['Provider', 'Output', 'Time', 'Score', 'Status'].map(h => <span key={h}>{h}</span>)}
+          {['Provider', 'Output', 'Time', 'Score', 'Select'].map(h => <span key={h}>{h}</span>)}
         </div>
-        {result.all_quotes.map((q: QuoteResponse, i: number) => (
-          <div key={i} style={{
-            display: 'grid', gridTemplateColumns: '1fr 1.4fr 0.8fr 0.7fr 1fr',
-            padding: '0.65rem 1rem', borderBottom: i < result.all_quotes.length - 1 ? `1px solid ${C.border}` : 'none',
-            background: i === 0 ? C.surface : C.panel,
-            fontSize: '0.7rem', alignItems: 'center', transition: 'background 0.2s',
-          }}>
-            <span style={{ color: i === 0 ? C.max : C.muted, fontWeight: i === 0 ? 600 : 400 }}>{q.provider}</span>
-            <span style={{ color: i === 0 ? C.max : C.muted, fontFamily: "'DM Mono',monospace", fontSize: '0.68rem' }}>
-              {parseFloat(q.to_amount).toFixed(4)} {q.to_token}
-            </span>
-            <span style={{ color: C.muted, fontSize: '0.65rem' }}>~{q.estimated_time_seconds}s</span>
-            <span>
-              <div style={{ display: 'inline-flex', padding: '0.12rem 0.45rem', background: i === 0 ? C.mid : C.surface2, borderRadius: 3, fontSize: '0.6rem', color: i === 0 ? C.max : C.body }}>
-                {q.score.toFixed(1)}
-              </div>
-            </span>
-            {i === 0
-              ? <span><div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.12rem 0.45rem', background: C.mid, borderRadius: 3, fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: C.max }}>✓ Best</div></span>
-              : <span />}
-          </div>
-        ))}
+        {result.all_quotes.map((q: QuoteResponse, i: number) => {
+          const isSelected = q.provider === selectedProvider
+          return (
+            <button
+              key={i}
+              onClick={() => onSelectProvider(q.provider)}
+              style={{
+                display: 'grid', gridTemplateColumns: '1fr 1.4fr 0.8fr 0.7fr 1fr',
+                padding: '0.65rem 1rem',
+                borderBottom: i < result.all_quotes.length - 1 ? `1px solid ${C.border}` : 'none',
+                background: isSelected ? C.surface : C.panel,
+                fontSize: '0.7rem', alignItems: 'center', width: '100%',
+                border: 'none', cursor: 'pointer', textAlign: 'left',
+                fontFamily: "'DM Mono',monospace",
+                transition: 'background 0.2s',
+                outline: isSelected ? `1px solid ${C.max}` : 'none',
+              }}>
+              <span style={{ color: isSelected ? C.max : C.muted, fontWeight: isSelected ? 600 : 400 }}>{q.provider}</span>
+              <span style={{ color: isSelected ? C.max : C.muted }}>
+                {parseFloat(q.to_amount).toFixed(4)} {q.to_token}
+              </span>
+              <span style={{ color: C.muted }}>~{q.estimated_time_seconds}s</span>
+              <span>
+                <div style={{ display: 'inline-flex', padding: '0.12rem 0.45rem', background: isSelected ? C.mid : C.surface2, borderRadius: 3, fontSize: '0.6rem', color: isSelected ? C.max : C.body }}>
+                  {q.score.toFixed(1)}
+                </div>
+              </span>
+              <span>
+                {isSelected ? (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.12rem 0.45rem', background: C.mid, borderRadius: 3, fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: C.max }}>✓ Selected</div>
+                ) : (
+                  <div style={{ display: 'inline-flex', padding: '0.12rem 0.45rem', background: C.surface2, borderRadius: 3, fontSize: '0.58rem', color: C.muted }}>Choose</div>
+                )}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
@@ -526,6 +551,11 @@ export default function AppPage() {
   const [chains, setChains]               = useState<string[]>([])
   const [chainsLoading, setChainsLoading] = useState(true)
 
+  // Provider selection state
+  const [selectedProvider, setSelectedProvider] = useState<string>('0x')
+  const [currentTransaction, setCurrentTransaction] = useState<TransactionPayload | null>(null)
+  const [txBuilding, setTxBuilding]       = useState(false)
+
   // Mobile-specific state
   const [mobileTab, setMobileTab]         = useState<MobileTab>('command')
   const [sheetWallet, setSheetWallet]     = useState(false)
@@ -564,22 +594,20 @@ export default function AppPage() {
 
   useEffect(() => {
     if (txSuccess && receipt && histId) {
-      // Check if it was an approval (first 4 bytes = 0x095ea7b3)
-      const txData = result?.transaction?.data || ''
+      const txData = currentTransaction?.data || ''
       if (txData.startsWith('0x095ea7b3')) {
-        toast.success('Token approved. Now sign the swap transaction.')
-        updateCommand(histId, { status: 'pending' })
+        toast.success('Approval confirmed. Please sign the next transaction.')
         setConfirming(false)
-        return // don't show success overlay
+        return
       }
       setShowSuccess(true)
       updateCommand(histId, { status: 'completed', txHash: receipt.transactionHash })
       toast.success('Transaction settled!')
       setConfirming(false)
     }
-  }, [txSuccess, receipt, histId, updateCommand, result])
+  }, [txSuccess, receipt, histId, updateCommand, currentTransaction])
 
-  // 🔥 Helper to switch network when a chain is selected
+  // Helper to switch network when a chain is selected
   const handleNetworkSwitch = async (idx: number) => {
     const chainNameLower = chains[idx]?.toLowerCase()
     const targetChainId = chainNameLower ? CHAIN_IDS[chainNameLower] : undefined
@@ -594,10 +622,50 @@ export default function AppPage() {
     setFromChainIdx(idx)
   }
 
+  // Fetch transaction for a given quote
+  const fetchTransactionForQuote = useCallback(async (quote: QuoteResponse) => {
+    if (!address) return
+    setTxBuilding(true)
+    try {
+      const tx = await intentService.buildTransaction(quote, address)
+      setCurrentTransaction(tx)
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to build transaction')
+    } finally {
+      setTxBuilding(false)
+    }
+  }, [address])
+
+  // Handle provider selection
+  const handleSelectProvider = useCallback((providerName: string) => {
+    if (!result) return
+    const selectedQuote = result.all_quotes.find(q => q.provider === providerName)
+    if (!selectedQuote) return
+
+    setSelectedProvider(providerName)
+    if (selectedQuote.provider === result.selected_provider) {
+      // Already the best quote, use its transaction
+      setCurrentTransaction(result.transaction)
+    } else {
+      // Fetch transaction for the newly selected provider
+      fetchTransactionForQuote(selectedQuote)
+    }
+  }, [result, fetchTransactionForQuote])
+
+  // On new result, set default to 0x if available, else best
+  useEffect(() => {
+    if (!result) return
+    const defaultQuote = result.all_quotes.find(q => q.provider === '0x') || result.all_quotes[0]
+    if (defaultQuote) {
+      handleSelectProvider(defaultQuote.provider)
+    }
+  }, [result, handleSelectProvider])
+
   const handleSubmit = useCallback(async () => {
     if (!command.trim() || loading || chainsLoading) return
     setLoading(true)
     setResult(null)
+    setCurrentTransaction(null)
     if (isMobile) setMobileTab('command')
 
     const fromChainDisplay = chains[fromChainIdx] || 'ethereum'
@@ -623,9 +691,9 @@ export default function AppPage() {
   }, [command, loading, chainsLoading, chains, fromChainIdx, destAddress, address, isMobile, addCommand, updateCommand])
 
   const handleConfirm = async () => {
-    if (!result || !address) { toast.error('Wallet not connected'); return }
-    const tx = result.transaction
-    if (!tx?.to) { toast.error('Invalid transaction data'); return }
+    const tx = currentTransaction
+    if (!result || !address || !tx) { toast.error('No transaction data'); return }
+    if (!tx.to) { toast.error('Invalid transaction data'); return }
 
     // Auto‑switch chain if the wallet is on the wrong network
     if (chainId !== tx.chain_id) {
@@ -677,7 +745,7 @@ export default function AppPage() {
 
   const displayChains = chains.map(c => capitalize(c))
   const totalVolume = commandHistory.filter(c => c.status === 'completed').reduce((s, c) => s + (c.volumeUsd || 0), 0)
-  const isConfirming = confirming || isSending || isWaiting
+  const isConfirming = confirming || isSending || isWaiting || txBuilding
   const explorerUrl = result?.quote?.chain_id ? EXPLORERS[result.quote.chain_id] : 'https://etherscan.io/tx/'
 
   const CommandCard = (
@@ -756,7 +824,7 @@ export default function AppPage() {
         </div>
       )}
 
-      {result && !loading && <ProviderTable result={result} />}
+      {result && !loading && <ProviderTable result={result} selectedProvider={selectedProvider} onSelectProvider={handleSelectProvider} />}
 
       {result && !loading && isMobile && (
         <ConfirmButton result={result} isConfirming={isConfirming} isSending={isSending} isWaiting={isWaiting} onConfirm={handleConfirm} />
