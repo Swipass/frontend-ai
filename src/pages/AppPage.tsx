@@ -2,9 +2,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { useSendTransaction, useWaitForTransactionReceipt, useConnect } from 'wagmi'
+import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, parseUnits } from 'viem'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { intentService, IntentResponse, QuoteResponse } from '../services/intentService'
 import { useAppStore } from '../store/appStore'
 import { useWallet } from '../hooks/useWallet'
@@ -168,7 +167,6 @@ function BottomSheet({
 
   return (
     <>
-      {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
@@ -179,7 +177,6 @@ function BottomSheet({
           transition: 'opacity 0.3s',
         }}
       />
-      {/* Sheet */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: C.panel,
@@ -192,7 +189,6 @@ function BottomSheet({
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
-        {/* Drag handle */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0.75rem 1.25rem 0', flexShrink: 0 }}>
           <div style={{ width: 40, height: 4, background: C.mid, borderRadius: 2, marginBottom: '0.75rem' }} />
           <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', ...borderBottom, paddingBottom: '0.75rem' }}>
@@ -248,48 +244,22 @@ function NetworkDropdown({
 
 // ─── Wallet Panel Content (shared desktop + sheet) ────────────
 function WalletPanelContent({
-  isConnected, address, balance, chainName,
+  isConnected, address, balance, chainName, connect, disconnect,
 }: {
   isConnected: boolean;
   address?: string;
   balance: string;
   chainName: string;
+  connect: () => void;
+  disconnect: () => void;
 }) {
-  const { connectAsync, connectors } = useConnect();
-
-  const handleConnect = useCallback(async () => {
-    const injectedConnector = connectors.find(c => c.id === 'injected');
-    const wcConnector = connectors.find(c => c.id === 'walletConnect');
-
-    // Try browser extension first (MetaMask, Nightly, etc.)
-    if (injectedConnector) {
-      try {
-        await connectAsync({ connector: injectedConnector });
-        return;
-      } catch {
-        // injected failed, fall through to WalletConnect modal
-      }
-    }
-
-    // WalletConnect (works for both desktop & mobile)
-    if (wcConnector) {
-      try {
-        await connectAsync({ connector: wcConnector });
-      } catch (err: any) {
-        toast.error(err.message || 'Failed to connect wallet');
-      }
-    } else {
-      toast.error('No wallet connector available');
-    }
-  }, [connectors, connectAsync]);
-
   if (!isConnected) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <p style={{ fontSize: '0.82rem', color: C.muted, lineHeight: 1.65, margin: 0 }}>
           Connect your wallet to start executing cross-chain transactions. No account required.
         </p>
-        <button onClick={handleConnect}
+        <button onClick={connect}
           style={{
             width: '100%', padding: '0.85rem', background: C.max, color: C.bg,
             border: 'none', borderRadius: 6, fontFamily: "'DM Mono',monospace",
@@ -326,16 +296,10 @@ function WalletPanelContent({
           <PulseDot connected size={6} />
           {chainName}
         </div>
-        <ConnectButton.Custom>
-          {({ openAccountModal }) => (
-            <button
-              onClick={openAccountModal}
-              style={{ marginLeft: 'auto', fontSize: '0.62rem', color: C.muted, background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Disconnect
-            </button>
-          )}
-        </ConnectButton.Custom>
+        <button onClick={disconnect}
+          style={{ marginLeft: 'auto', fontSize: '0.62rem', color: C.muted, background: 'none', border: 'none', cursor: 'pointer' }}>
+          Disconnect
+        </button>
       </div>
     </div>
   )
@@ -377,7 +341,6 @@ function TxPreviewContent({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      {/* Route */}
       <div style={{ display: 'flex', alignItems: 'center', paddingBottom: '1rem', ...borderBottom, marginBottom: '0.75rem' }}>
         <div style={{ flex: 1 }}>
           <div style={{ ...uppercaseLabel, marginBottom: '0.25rem', display: 'block' }}>You Send</div>
@@ -399,7 +362,6 @@ function TxPreviewContent({
         </div>
       </div>
 
-      {/* Detail rows */}
       {[
         ['Platform fee', `${result.quote.fee_amount} ${result.quote.fee_token} (0.10%)`],
         ['Est. gas', `~$${result.quote.estimated_gas_usd}`],
@@ -413,7 +375,6 @@ function TxPreviewContent({
         </div>
       ))}
 
-      {/* Destination */}
       <div style={{ marginTop: '0.75rem', padding: '0.65rem 0.75rem', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6 }}>
         <div style={{ ...uppercaseLabel, marginBottom: '0.3rem', display: 'block' }}>Destination</div>
         <div style={{ fontSize: '0.72rem', color: result.destination_address ? C.label : C.muted, fontStyle: result.destination_address ? 'normal' : 'italic', wordBreak: 'break-all' }}>
@@ -477,7 +438,6 @@ function ProviderTable({ result }: { result: IntentResponse }) {
     <div style={{ marginTop: '1rem' }}>
       <div style={{ ...uppercaseLabel, marginBottom: '0.6rem', display: 'block', fontSize: '0.6rem', letterSpacing: '0.12em' }}>Provider Quotes — Best Selected</div>
       <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
-        {/* Header row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 0.8fr 0.7fr 1fr', padding: '0.5rem 1rem', background: C.surface, fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted, ...borderBottom }}>
           {['Provider', 'Output', 'Time', 'Score', 'Status'].map(h => <span key={h}>{h}</span>)}
         </div>
@@ -538,7 +498,7 @@ function ConfirmButton({
 // ─── Main component ───────────────────────────────────────────
 export default function AppPage() {
   const { commandHistory, addCommand, updateCommand } = useAppStore()
-  const { address, isConnected, chainName, balance, chainId, switchChainAsync } = useWallet()
+  const { address, isConnected, chainName, balance, chainId, connect, disconnect, switchChainAsync } = useWallet()
 
   const [command, setCommand]             = useState('')
   const [loading, setLoading]             = useState(false)
@@ -603,7 +563,7 @@ export default function AppPage() {
     if (!command.trim() || loading || chainsLoading) return
     setLoading(true)
     setResult(null)
-    if (isMobile) setMobileTab('command') // stay on command tab during loading
+    if (isMobile) setMobileTab('command')
 
     const fromChainDisplay = chains[fromChainIdx] || 'ethereum'
     const id = addCommand({ command: command.trim(), fromChain: capitalize(fromChainDisplay), toChain: '', status: 'pending' })
@@ -618,7 +578,6 @@ export default function AppPage() {
       })
       setResult(res)
       updateCommand(id, { toChain: res.parsed_intent.to_chain || '', status: 'pending' })
-      // Auto-switch to preview on mobile after result
       if (isMobile) setTimeout(() => setMobileTab('preview'), 300)
     } catch (e: any) {
       toast.error(e.message || 'Failed to parse intent')
@@ -633,28 +592,28 @@ export default function AppPage() {
     const tx = result.transaction
     if (!tx?.to) { toast.error('Invalid transaction data'); return }
 
-    // Auto‑switch chain if the wallet is on the wrong network
+    // === AUTO SWITCH CHAIN ===
     if (chainId !== tx.chain_id) {
-      if (switchChainAsync) {
-        try {
-          toast.loading(`Switching network to ${tx.chain_name || 'required chain'}...`, { id: 'switch' })
-          await switchChainAsync({ chainId: tx.chain_id })
-          toast.success('Network switched. Please confirm again.', { id: 'switch' })
-        } catch (err: any) {
-          toast.error(err.message || 'Failed to switch network', { id: 'switch' })
-        }
-        return
-      } else {
-        toast.error(`Switch wallet to ${tx.chain_name || 'required chain'} (Chain ID: ${tx.chain_id})`)
-        return
+      try {
+        toast.loading(`Switching network to ${tx.chain_name || 'required chain'}...`, { id: 'switch' })
+        await switchChainAsync({ chainId: tx.chain_id })
+        toast.success('Network switched. Press Confirm again.', { id: 'switch' })
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to switch network', { id: 'switch' })
       }
+      return
     }
 
     setConfirming(true)
     try {
       let value: bigint
       try { value = parseEther(tx.value || '0') } catch { value = parseUnits(tx.value || '0', 18) }
-      const hash = await sendTransactionAsync({ to: tx.to as `0x${string}`, data: tx.data as `0x${string}`, value, gas: tx.gas_limit ? BigInt(tx.gas_limit) : undefined })
+      const hash = await sendTransactionAsync({
+        to: tx.to as `0x${string}`,
+        data: tx.data as `0x${string}`,
+        value,
+        gas: tx.gas_limit ? BigInt(tx.gas_limit) : undefined,
+      })
       setTxHash(hash)
       toast.loading('Transaction broadcasted. Waiting for confirmation...', { id: 'tx' })
     } catch (err: any) {
@@ -686,10 +645,8 @@ export default function AppPage() {
   const isConfirming = confirming || isSending || isWaiting
   const explorerUrl = result?.quote?.chain_id ? EXPLORERS[result.quote.chain_id] : 'https://etherscan.io/tx/'
 
-  // ─── Shared: command card content ──────────────────────────
   const CommandCard = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {/* Status banner */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', opacity: isConnected ? 1 : 0.7, transition: 'opacity 0.4s' }}>
         <PulseDot connected={isConnected} />
         <span style={{ fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: C.muted }}>
@@ -697,13 +654,11 @@ export default function AppPage() {
         </span>
       </div>
 
-      {/* Input card */}
       <div style={{
         background: C.panel, border: `1px solid ${loading ? C.muted : result ? C.body : C.border}`,
         borderRadius: 12, overflow: 'hidden', transition: 'border-color 0.3s, box-shadow 0.3s',
         boxShadow: result ? `0 0 0 3px rgba(102,102,102,0.08)` : 'none',
       }}>
-        {/* Top row: voice + textarea */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '1rem 1rem 0' }}>
           <button onClick={toggleRecording}
             style={{ width: 40, height: 40, border: `1px solid ${isRecording ? C.body : C.border}`, borderRadius: 8, background: isRecording ? C.mid : C.surface, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, color: isRecording ? C.max : C.muted, transition: 'all 0.3s' }}>
@@ -722,7 +677,6 @@ export default function AppPage() {
           </div>
         </div>
 
-        {/* Dest address toggle */}
         <div style={{ padding: '0 1rem 0.5rem', paddingLeft: 'calc(1rem + 40px + 0.75rem)' }}>
           <button onClick={() => setShowDestInput(!showDestInput)}
             style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: C.mid, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono',monospace", padding: 0 }}>
@@ -738,10 +692,8 @@ export default function AppPage() {
           )}
         </div>
 
-        {/* Toolbar */}
         <div style={{ padding: '0.75rem 1rem', borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-            {/* From chain selector */}
             <button
               onClick={() => isMobile ? setSheetNetwork(true) : setNetworkDropdown(!networkDropdown)}
               style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.65rem', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, fontSize: '0.68rem', color: C.body, cursor: 'pointer', transition: 'all 0.3s', fontFamily: "'DM Mono',monospace", whiteSpace: 'nowrap' }}>
@@ -759,7 +711,6 @@ export default function AppPage() {
         </div>
       </div>
 
-      {/* Loading */}
       {loading && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '2rem', textAlign: 'center' }}>
           <div style={{ position: 'relative', width: 48, height: 48 }}>
@@ -770,15 +721,12 @@ export default function AppPage() {
         </div>
       )}
 
-      {/* Provider comparison */}
       {result && !loading && <ProviderTable result={result} />}
 
-      {/* Mobile: confirm button inline on command tab */}
       {result && !loading && isMobile && (
         <ConfirmButton result={result} isConfirming={isConfirming} isSending={isSending} isWaiting={isWaiting} onConfirm={handleConfirm} />
       )}
 
-      {/* Quick commands */}
       {!loading && !result && (
         <div>
           <div style={{ ...uppercaseLabel, marginBottom: '0.6rem', display: 'block' }}>Quick Commands</div>
@@ -797,17 +745,12 @@ export default function AppPage() {
     </div>
   )
 
-  // ─── Desktop: network dropdown (positioned) ─────────────────
   const DesktopNetworkDropdown = !isMobile && networkDropdown ? (
     <div onClick={() => setNetworkDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 198 }} />
   ) : null
 
-  // ─────────────────────────────────────────────────────────────
-  //  RENDER
-  // ─────────────────────────────────────────────────────────────
   return (
     <>
-      {/* ── Global keyframes ── */}
       <style>{`
         @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes spin { to{transform:rotate(360deg)} }
@@ -818,7 +761,6 @@ export default function AppPage() {
         }
       `}</style>
 
-      {/* ── Success overlay ── */}
       {showSuccess && (
         <div
           onClick={e => { if (e.target === e.currentTarget) closeSuccess() }}
@@ -840,47 +782,23 @@ export default function AppPage() {
         </div>
       )}
 
-      {/* ── Desktop network dropdown backdrop ── */}
       {DesktopNetworkDropdown}
 
-      {/* ══════════════════════════════════════════════════════════
-          MOBILE LAYOUT  (< 768px)
-          ══════════════════════════════════════════════════════════ */}
       {isMobile ? (
         <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: C.bg, overflow: 'hidden' }}>
-
-          {/* Mobile top bar */}
           <header style={{ background: C.panel, borderBottom: `1px solid ${C.border}`, padding: '0 1rem', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 100 }}>
             <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', ...displayFont, fontSize: '0.95rem', fontWeight: 800, color: C.max, letterSpacing: '-0.03em', textDecoration: 'none' }}>
               Swipass
             </Link>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {/* Wallet status pill */}
-              <ConnectButton.Custom>
-                {({ openConnectModal, account, openAccountModal }) => {
-                  if (!account) {
-                    return (
-                      <button
-                        onClick={openConnectModal}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 40, background: 'none', cursor: 'pointer', fontFamily: "'DM Mono',monospace", fontSize: '0.68rem', color: C.muted, transition: 'all 0.2s' }}>
-                        <PulseDot connected={false} />
-                        Wallet
-                      </button>
-                    )
-                  }
-                  return (
-                    <button
-                      onClick={openAccountModal}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 40, background: 'none', cursor: 'pointer', fontFamily: "'DM Mono',monospace", fontSize: '0.68rem', color: C.body, transition: 'all 0.2s' }}>
-                      <PulseDot connected={true} />
-                      {account.address.slice(0, 4)}...{account.address.slice(-3)}
-                    </button>
-                  )
-                }}
-              </ConnectButton.Custom>
+              <button
+                onClick={() => setSheetWallet(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 40, background: 'none', cursor: 'pointer', fontFamily: "'DM Mono',monospace", fontSize: '0.68rem', color: isConnected ? C.body : C.muted, transition: 'all 0.2s' }}>
+                <PulseDot connected={isConnected} />
+                {isConnected ? `${address?.slice(0, 4)}...${address?.slice(-3)}` : 'Wallet'}
+              </button>
 
-              {/* Network pill */}
               <button
                 onClick={() => setSheetNetwork(true)}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.35rem 0.6rem', border: `1px solid ${C.border}`, borderRadius: 40, background: 'none', cursor: 'pointer', fontFamily: "'DM Mono',monospace", fontSize: '0.68rem', color: C.muted }}>
@@ -890,18 +808,12 @@ export default function AppPage() {
             </div>
           </header>
 
-          {/* Mobile tab content */}
           <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
-
-            {/* dot-grid background */}
             <div style={{ position: 'fixed', inset: 0, backgroundImage: `radial-gradient(circle, ${C.surface2} 1px, transparent 1px)`, backgroundSize: '24px 24px', opacity: 0.2, pointerEvents: 'none', zIndex: 0 }} />
 
             <div style={{ position: 'relative', zIndex: 1, padding: '1.25rem 1rem', paddingBottom: '5rem' }}>
-
-              {/* Command tab */}
               {mobileTab === 'command' && CommandCard}
 
-              {/* Preview tab */}
               {mobileTab === 'preview' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <TxPreviewContent result={result} displayChains={displayChains} />
@@ -911,10 +823,8 @@ export default function AppPage() {
                 </div>
               )}
 
-              {/* History tab */}
               {mobileTab === 'history' && (
                 <div>
-                  {/* Session stats */}
                   <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', padding: '1rem', background: C.panel, border: `1px solid ${C.border}`, borderRadius: 10 }}>
                     {[
                       { val: `$${totalVolume.toFixed(0)}`, lbl: 'Volume' },
@@ -933,7 +843,6 @@ export default function AppPage() {
             </div>
           </div>
 
-          {/* ── Mobile bottom tab bar ── */}
           <div style={{
             position: 'fixed', bottom: 0, left: 0, right: 0,
             background: C.panel, borderTop: `1px solid ${C.border}`,
@@ -969,14 +878,10 @@ export default function AppPage() {
             ))}
           </div>
 
-          {/* ── Mobile bottom sheets ── */}
-
-          {/* Wallet sheet */}
           <BottomSheet open={sheetWallet} onClose={() => setSheetWallet(false)} title="Wallet" maxHeight="70vh">
-            <WalletPanelContent isConnected={isConnected} address={address} balance={balance} chainName={chainName} />
+            <WalletPanelContent isConnected={isConnected} address={address} balance={balance} chainName={chainName} connect={connect} disconnect={disconnect} />
           </BottomSheet>
 
-          {/* Network sheet */}
           <BottomSheet open={sheetNetwork} onClose={() => setSheetNetwork(false)} title="Select Network" maxHeight="75vh">
             {displayChains.map((chain, idx) => (
               <button key={chain} onClick={() => { setFromChainIdx(idx); setSheetNetwork(false) }}
@@ -988,21 +893,13 @@ export default function AppPage() {
             ))}
           </BottomSheet>
 
-          {/* History sheet (accessible via tab, but also from header if needed) */}
           <BottomSheet open={sheetHistory} onClose={() => setSheetHistory(false)} title={`History (${commandHistory.length})`} maxHeight="85vh">
             <HistoryContent commandHistory={commandHistory} />
           </BottomSheet>
         </div>
-
       ) : (
-
-        /* ══════════════════════════════════════════════════════════
-           DESKTOP LAYOUT  (≥ 768px)
-           ══════════════════════════════════════════════════════════ */
         <div style={{ height: '100vh', overflow: 'hidden', display: 'grid', gridTemplateRows: '56px 1fr', gridTemplateColumns: '260px 1fr 320px', background: C.bg, fontFamily: "'DM Mono',monospace" }}
           onClick={() => setNetworkDropdown(false)}>
-
-          {/* ── Desktop Top Bar ── */}
           <header style={{ gridColumn: '1/-1', gridRow: 1, background: C.panel, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1.25rem', zIndex: 100 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
               <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', ...displayFont, fontSize: '1rem', fontWeight: 800, color: C.max, letterSpacing: '-0.03em', textDecoration: 'none' }}>
@@ -1018,7 +915,6 @@ export default function AppPage() {
               </nav>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {/* Network pill */}
               <div style={{ position: 'relative' }}>
                 <button onClick={e => { e.stopPropagation(); setNetworkDropdown(!networkDropdown) }}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.3rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 40, fontSize: '0.7rem', color: C.body, background: 'none', cursor: 'pointer', transition: 'all 0.3s', fontFamily: "'DM Mono',monospace" }}>
@@ -1038,25 +934,10 @@ export default function AppPage() {
                   </div>
                 )}
               </div>
-              {/* Wallet button */}
-              <ConnectButton.Custom>
-                {({ openConnectModal, account, openAccountModal }) => {
-                  if (!account) {
-                    return (
-                      <button onClick={openConnectModal}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', background: C.max, color: C.bg, border: 'none', borderRadius: 4, fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.3s' }}>
-                        Connect Wallet
-                      </button>
-                    )
-                  }
-                  return (
-                    <button onClick={openAccountModal}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', background: C.surface, color: C.label, border: `1px solid ${C.border}`, borderRadius: 4, fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.3s' }}>
-                      {account.address.slice(0, 6)}...{account.address.slice(-4)}
-                    </button>
-                  )
-                }}
-              </ConnectButton.Custom>
+              <button onClick={isConnected ? disconnect : connect}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', background: isConnected ? C.surface : C.max, color: isConnected ? C.label : C.bg, border: isConnected ? `1px solid ${C.border}` : 'none', borderRadius: 4, fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.3s' }}>
+                {isConnected ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : 'Connect Wallet'}
+              </button>
               <Link to="/dashboard"
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: C.muted, padding: '0.4rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 4, transition: 'all 0.3s', textDecoration: 'none' }}>
                 <Icon.Grid size={11} />
@@ -1065,7 +946,6 @@ export default function AppPage() {
             </div>
           </header>
 
-          {/* ── Desktop Left Sidebar ── */}
           <aside style={{ gridColumn: 1, gridRow: 2, borderRight: `1px solid ${C.border}`, background: C.panel, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '1rem 1.25rem 0.75rem', ...borderBottom, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <span style={{ ...uppercaseLabel, fontSize: '0.65rem', letterSpacing: '0.14em' }}>Command History</span>
@@ -1086,14 +966,11 @@ export default function AppPage() {
             </div>
           </aside>
 
-          {/* ── Desktop Main Area ── */}
           <main
             style={{ gridColumn: 2, gridRow: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', position: 'relative', overflow: 'hidden' }}
             onClick={() => setNetworkDropdown(false)}>
-            {/* ambient glow */}
             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 500, background: 'radial-gradient(ellipse, rgba(100,100,100,0.04) 0%, transparent 70%)', pointerEvents: 'none', animation: 'ambientPulse 6s ease-in-out infinite' }} />
             <style>{`@keyframes ambientPulse { 0%,100%{opacity:0.6} 50%{opacity:1} }`}</style>
-            {/* dot grid */}
             <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(circle, ${C.surface2} 1px, transparent 1px)`, backgroundSize: '28px 28px', opacity: 0.25, pointerEvents: 'none' }} />
 
             <div style={{ width: '100%', maxWidth: 640, position: 'relative', zIndex: 1 }}>
@@ -1101,19 +978,16 @@ export default function AppPage() {
             </div>
           </main>
 
-          {/* ── Desktop Right Panel ── */}
           <aside style={{ gridColumn: 3, gridRow: 2, borderLeft: `1px solid ${C.border}`, background: C.panel, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            {/* Wallet section */}
             <div style={{ flexShrink: 0, ...borderBottom }}>
               <div style={{ padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ ...uppercaseLabel, fontSize: '0.62rem', letterSpacing: '0.14em' }}>Wallet</span>
               </div>
               <div style={{ padding: '0 1.25rem 1.25rem' }}>
-                <WalletPanelContent isConnected={isConnected} address={address} balance={balance} chainName={chainName} />
+                <WalletPanelContent isConnected={isConnected} address={address} balance={balance} chainName={chainName} connect={connect} disconnect={disconnect} />
               </div>
             </div>
 
-            {/* TX Preview */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ padding: '0.85rem 1.25rem', ...borderBottom, flexShrink: 0 }}>
                 <span style={{ ...uppercaseLabel, fontSize: '0.62rem', letterSpacing: '0.14em' }}>Transaction Preview</span>
@@ -1128,7 +1002,6 @@ export default function AppPage() {
               )}
             </div>
           </aside>
-
         </div>
       )}
     </>
