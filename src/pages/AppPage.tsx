@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, parseUnits } from 'viem'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { intentService, IntentResponse, QuoteResponse } from '../services/intentService'
 import { useAppStore } from '../store/appStore'
 import { useWallet } from '../hooks/useWallet'
@@ -247,14 +248,12 @@ function NetworkDropdown({
 
 // ─── Wallet Panel Content (shared desktop + sheet) ────────────
 function WalletPanelContent({
-  isConnected, address, balance, chainName, connect, disconnect,
+  isConnected, address, balance, chainName,
 }: {
-  isConnected: boolean; 
-  address?: string; 
-  balance: string; 
+  isConnected: boolean;
+  address?: string;
+  balance: string;
   chainName: string;
-  connect: () => void; 
-  disconnect: () => void
 }) {
   if (!isConnected) {
     return (
@@ -262,16 +261,20 @@ function WalletPanelContent({
         <p style={{ fontSize: '0.82rem', color: C.muted, lineHeight: 1.65, margin: 0 }}>
           Connect your wallet to start executing cross-chain transactions. No account required.
         </p>
-        <button 
-          onClick={connect}
-          style={{ 
-            width: '100%', padding: '0.85rem', background: C.max, color: C.bg, 
-            border: 'none', borderRadius: 6, fontFamily: "'DM Mono',monospace", 
-            fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', 
-            cursor: 'pointer' 
-          }}>
-          Connect Wallet
-        </button>
+        <ConnectButton.Custom>
+          {({ openConnectModal }) => (
+            <button
+              onClick={openConnectModal}
+              style={{
+                width: '100%', padding: '0.85rem', background: C.max, color: C.bg,
+                border: 'none', borderRadius: 6, fontFamily: "'DM Mono',monospace",
+                fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase',
+                cursor: 'pointer'
+              }}>
+              Connect Wallet
+            </button>
+          )}
+        </ConnectButton.Custom>
         <div style={{ display: 'flex', gap: '0.5rem', padding: '0.65rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 5, fontSize: '0.72rem', color: C.muted, lineHeight: 1.5 }}>
           <Icon.Shield size={13} />
           Non-custodial. Your keys stay in your wallet.
@@ -300,9 +303,16 @@ function WalletPanelContent({
           <PulseDot connected size={6} />
           {chainName}
         </div>
-        <button onClick={disconnect} style={{ marginLeft: 'auto', fontSize: '0.62rem', color: C.muted, background: 'none', border: 'none' }}>
-          Disconnect
-        </button>
+        <ConnectButton.Custom>
+          {({ openAccountModal }) => (
+            <button
+              onClick={openAccountModal}
+              style={{ marginLeft: 'auto', fontSize: '0.62rem', color: C.muted, background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              Disconnect
+            </button>
+          )}
+        </ConnectButton.Custom>
       </div>
     </div>
   )
@@ -505,7 +515,7 @@ function ConfirmButton({
 // ─── Main component ───────────────────────────────────────────
 export default function AppPage() {
   const { commandHistory, addCommand, updateCommand } = useAppStore()
-  const { address, isConnected, chainName, balance, connect, disconnect, chainId } = useWallet()
+  const { address, isConnected, chainName, balance, chainId } = useWallet()  // removed connect/disconnect
 
   const [command, setCommand]             = useState('')
   const [loading, setLoading]             = useState(false)
@@ -809,12 +819,28 @@ export default function AppPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               {/* Wallet status pill */}
-              <button
-                onClick={() => setSheetWallet(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 40, background: 'none', cursor: 'pointer', fontFamily: "'DM Mono',monospace", fontSize: '0.68rem', color: isConnected ? C.body : C.muted, transition: 'all 0.2s' }}>
-                <PulseDot connected={isConnected} />
-                {isConnected ? `${address?.slice(0, 4)}...${address?.slice(-3)}` : 'Wallet'}
-              </button>
+              <ConnectButton.Custom>
+                {({ openConnectModal, account, openAccountModal }) => {
+                  if (!account) {
+                    return (
+                      <button
+                        onClick={openConnectModal}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 40, background: 'none', cursor: 'pointer', fontFamily: "'DM Mono',monospace", fontSize: '0.68rem', color: C.muted, transition: 'all 0.2s' }}>
+                        <PulseDot connected={false} />
+                        Wallet
+                      </button>
+                    )
+                  }
+                  return (
+                    <button
+                      onClick={openAccountModal}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 40, background: 'none', cursor: 'pointer', fontFamily: "'DM Mono',monospace", fontSize: '0.68rem', color: C.body, transition: 'all 0.2s' }}>
+                      <PulseDot connected={true} />
+                      {account.address.slice(0, 4)}...{account.address.slice(-3)}
+                    </button>
+                  )
+                }}
+              </ConnectButton.Custom>
 
               {/* Network pill */}
               <button
@@ -909,7 +935,7 @@ export default function AppPage() {
 
           {/* Wallet sheet */}
           <BottomSheet open={sheetWallet} onClose={() => setSheetWallet(false)} title="Wallet" maxHeight="70vh">
-            <WalletPanelContent isConnected={isConnected} address={address} balance={balance} chainName={chainName} connect={() => { connect(); setSheetWallet(false) }} disconnect={() => { disconnect(); setSheetWallet(false) }} />
+            <WalletPanelContent isConnected={isConnected} address={address} balance={balance} chainName={chainName} />
           </BottomSheet>
 
           {/* Network sheet */}
@@ -975,10 +1001,24 @@ export default function AppPage() {
                 )}
               </div>
               {/* Wallet button */}
-              <button onClick={isConnected ? disconnect : connect}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', background: isConnected ? C.surface : C.max, color: isConnected ? C.label : C.bg, border: isConnected ? `1px solid ${C.border}` : 'none', borderRadius: 4, fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.3s' }}>
-                {isConnected ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : 'Connect Wallet'}
-              </button>
+              <ConnectButton.Custom>
+                {({ openConnectModal, account, openAccountModal }) => {
+                  if (!account) {
+                    return (
+                      <button onClick={openConnectModal}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', background: C.max, color: C.bg, border: 'none', borderRadius: 4, fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.3s' }}>
+                        Connect Wallet
+                      </button>
+                    )
+                  }
+                  return (
+                    <button onClick={openAccountModal}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', background: C.surface, color: C.label, border: `1px solid ${C.border}`, borderRadius: 4, fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.3s' }}>
+                      {account.address.slice(0, 6)}...{account.address.slice(-4)}
+                    </button>
+                  )
+                }}
+              </ConnectButton.Custom>
               <Link to="/dashboard"
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: C.muted, padding: '0.4rem 0.75rem', border: `1px solid ${C.border}`, borderRadius: 4, transition: 'all 0.3s', textDecoration: 'none' }}>
                 <Icon.Grid size={11} />
@@ -1031,7 +1071,7 @@ export default function AppPage() {
                 <span style={{ ...uppercaseLabel, fontSize: '0.62rem', letterSpacing: '0.14em' }}>Wallet</span>
               </div>
               <div style={{ padding: '0 1.25rem 1.25rem' }}>
-                <WalletPanelContent isConnected={isConnected} address={address} balance={balance} chainName={chainName} connect={connect} disconnect={disconnect} />
+                <WalletPanelContent isConnected={isConnected} address={address} balance={balance} chainName={chainName} />
               </div>
             </div>
 

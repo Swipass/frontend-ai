@@ -1,7 +1,8 @@
 // src/config/wagmi.ts
-import { http, createConfig } from 'wagmi'
+import '@rainbow-me/rainbowkit/styles.css'
+import { getDefaultConfig } from '@rainbow-me/rainbowkit'
+import { http } from 'wagmi'
 import { mainnet, arbitrum, base, optimism, polygon, avalanche, bsc, gnosis } from 'wagmi/chains'
-import { injected, walletConnect } from 'wagmi/connectors'
 
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID?.trim()
 
@@ -11,22 +12,10 @@ if (!projectId) {
 
 const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://swipass.com'
 
-export const config = createConfig({
+export const config = getDefaultConfig({
+  appName: 'Swipass',
+  projectId: projectId,
   chains: [mainnet, arbitrum, base, optimism, polygon, avalanche, bsc, gnosis],
-  multiInjectedProviderDiscovery: true,
-  connectors: [
-    injected({ shimDisconnect: true }),
-    walletConnect({
-      projectId,
-      showQrModal: true,
-      metadata: {
-        name: 'Swipass',
-        description: 'Universal Cross-Chain Intent & Execution Platform',
-        url: appUrl,
-        icons: ['https://swipass.com/android-chrome-192x192.png'],
-      },
-    }),
-  ],
   transports: {
     [mainnet.id]: http('https://cloudflare-eth.com'),
     [arbitrum.id]: http('https://arb1.arbitrum.io/rpc'),
@@ -37,4 +26,6 @@ export const config = createConfig({
     [bsc.id]: http('https://bsc-dataseed.binance.org'),
     [gnosis.id]: http('https://rpc.gnosischain.com'),
   },
+  appIcon: `${appUrl}/android-chrome-192x192.png`,
+  appDescription: 'Universal Cross-Chain Intent & Execution Platform',
 })
