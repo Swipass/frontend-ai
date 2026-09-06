@@ -929,8 +929,8 @@ function verify(secret, header, rawBody) {
                   <tr><th className="p-3 text-left">User Type</th><th className="p-3 text-left">Platform Fee</th><th className="p-3 text-left">Developer Share</th></tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-dark-grey-3"><td className="p-3 text-light-grey-2">Direct Swipass user</td><td className="p-3 text-light-grey-2">{fees.direct || '-'}</td><td className="p-3 text-light-grey-2">n/a</td></tr>
-                  <tr className="bg-dark-grey-1"><td className="p-3 text-almost-white font-medium">Via a developer app</td><td className="p-3 text-light-grey-2">{fees.developer || '-'}</td><td className="p-3 text-almost-white font-semibold">{fees.developerCut || '-'}{fees.revenueShare ? ` (${fees.revenueShare} share)` : ''}</td></tr>
+                  <tr className="border-b border-dark-grey-3"><td className="p-3 text-light-grey-2">Direct Swipass user</td><td className="p-3 text-light-grey-2">{fees.direct || 'unavailable'}</td><td className="p-3 text-light-grey-2">n/a</td></tr>
+                  <tr className="bg-dark-grey-1"><td className="p-3 text-almost-white font-medium">Via a developer app</td><td className="p-3 text-light-grey-2">{fees.developer || 'unavailable'}</td><td className="p-3 text-almost-white font-semibold">{fees.developerCut || 'unavailable'}{fees.revenueShare ? ` (${fees.revenueShare} share)` : ''}</td></tr>
                 </tbody>
               </table>
             </div>

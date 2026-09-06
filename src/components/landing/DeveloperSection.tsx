@@ -5,7 +5,7 @@ import { useFeeRates } from '../../hooks/useFeeRates'
 export function DeveloperSection() {
   // Live rates: an admin can retune fees at runtime, so nothing here is a literal.
   const fees = useFeeRates()
-  const dash = '-'
+  const known = Boolean(fees.direct && fees.developer)
   return (
     <section id="developers" className="py-16 md:py-28 px-6 border-t border-dark-grey-3 relative z-10">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-start">
@@ -23,17 +23,27 @@ export function DeveloperSection() {
         <div className="reveal reveal-delay-2">
           <div className="border border-dark-grey-3 rounded-xl overflow-hidden bg-dark-grey-1">
             <div className="px-4 py-3 border-b border-dark-grey-3 text-xs uppercase tracking-wide text-light-grey-1">Fee & Revenue Structure</div>
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-xs text-light-grey-1 border-b border-dark-grey-3">
-                  <th className="p-4 font-normal">User Type</th><th className="p-4 font-normal">Fee</th><th className="p-4 font-normal">Your Share</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-dark-grey-2"><td className="p-4 text-sm text-light-grey-3">Direct User</td><td className="p-4 text-sm text-light-grey-3">{fees.direct || dash}</td><td className="p-4 text-sm text-light-grey-3">n/a</td></tr>
-                <tr><td className="p-4 text-sm text-almost-white font-medium">Via Developer App</td><td className="p-4 text-sm text-almost-white">{fees.developer || dash}</td><td className="p-4 text-sm text-almost-white font-semibold">{fees.developerCut || dash}{fees.revenueShare ? ` (${fees.revenueShare})` : ''}</td></tr>
-              </tbody>
-            </table>
+            {known ? (
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-xs text-light-grey-1 border-b border-dark-grey-3">
+                    <th className="p-4 font-normal">User Type</th><th className="p-4 font-normal">Fee</th><th className="p-4 font-normal">Your Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-dark-grey-2"><td className="p-4 text-sm text-light-grey-3">Direct User</td><td className="p-4 text-sm text-light-grey-3">{fees.direct}</td><td className="p-4 text-sm text-light-grey-3">n/a</td></tr>
+                  <tr><td className="p-4 text-sm text-almost-white font-medium">Via Developer App</td><td className="p-4 text-sm text-almost-white">{fees.developer}</td><td className="p-4 text-sm text-almost-white font-semibold">{fees.developerCut}{fees.revenueShare ? ` (${fees.revenueShare})` : ''}</td></tr>
+                </tbody>
+              </table>
+            ) : (
+              /* Rates are read from the API. A table of dashes would look broken
+                 and a written-in number could be wrong, so we say where to look. */
+              <p className="p-4 text-sm text-light-grey-1 leading-relaxed">
+                {fees.loaded
+                  ? 'Current fee and revenue-share rates are published in the docs.'
+                  : 'Loading current rates...'}
+              </p>
+            )}
           </div>
           <div className="mt-6 border border-dark-grey-3 rounded-xl overflow-hidden bg-dark-grey-1">
             <div className="px-4 py-3 border-b border-dark-grey-3 text-xs uppercase tracking-wide text-light-grey-1">Quick Integration</div>

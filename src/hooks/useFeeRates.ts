@@ -7,6 +7,11 @@
 import { useEffect, useState } from 'react'
 import { intentService } from '../services/intentService'
 
+// The last rates the API reported, kept so a brief outage does not blank the
+// pricing on a returning visitor's page. It is a copy of what the backend said,
+// refreshed on every load, never a stand-in for asking.
+const CACHE_KEY = 'swipass.fees.v1'
+
 export interface FeeRates {
   /** Charged on traffic with no API key, for example "0.10%". */
   direct: string
@@ -25,14 +30,26 @@ function percentValue(text: string | undefined): number | null {
   return Number.isFinite(value) ? value : null
 }
 
+const EMPTY: FeeRates = {
+  direct: "",
+  developer: "",
+  revenueShare: "",
+  developerCut: "",
+  loaded: false,
+}
+
+function readCache(): FeeRates | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    const parsed = raw ? JSON.parse(raw) : null
+    return parsed && parsed.direct ? { ...parsed, loaded: true } : null
+  } catch {
+    return null
+  }
+}
+
 export function useFeeRates(): FeeRates {
-  const [rates, setRates] = useState<FeeRates>({
-    direct: "",
-    developer: "",
-    revenueShare: "",
-    developerCut: "",
-    loaded: false,
-  })
+  const [rates, setRates] = useState<FeeRates>(() => readCache() || EMPTY)
 
   useEffect(() => {
     let cancelled = false
@@ -44,18 +61,25 @@ export function useFeeRates(): FeeRates {
         const share = stats.revenue_share || ""
         const fee = percentValue(developer)
         const pct = percentValue(share)
-        setRates({
+        const next: FeeRates = {
           direct: stats.fee_rate_direct || "",
           developer,
           revenueShare: share,
           developerCut:
             fee !== null && pct !== null ? `${((fee * pct) / 100).toFixed(3)}%` : "",
           loaded: true,
-        })
+        }
+        setRates(next)
+        try {
+          if (next.direct) localStorage.setItem(CACHE_KEY, JSON.stringify(next))
+        } catch {
+          // A browser that refuses storage just refetches every load.
+        }
       })
       .catch(() => {
-        // Leave the fields empty: a rate we could not read is not shown as a
-        // number, because a wrong fee is worse than a missing one.
+        // No number is invented. Either the cached rates stand or the surface
+        // says the rates are unavailable, because a wrong fee is worse than a
+        // missing one.
         if (!cancelled) setRates(r => ({ ...r, loaded: true }))
       })
     return () => {
