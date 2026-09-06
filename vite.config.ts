@@ -39,10 +39,15 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/v1': 'http://localhost:8000',
-      '/platform': 'http://localhost:8000',
-      '/admin': 'http://localhost:8000',
-      '/health': 'http://localhost:8000',
+      // Backend origin for the dev proxy. Defaults to :8000; override with
+      // BACKEND_URL when that port is taken by another local service.
+      '/v1': process.env.BACKEND_URL || 'http://localhost:8000',
+      '/platform': process.env.BACKEND_URL || 'http://localhost:8000',
+      '/admin': process.env.BACKEND_URL || 'http://localhost:8000',
+      // Proxy only the backend auth API subpaths. The bare "/auth" route is the
+      // frontend sign-in page and must be served by Vite, so it is NOT matched.
+      '^/auth/(login|callback|me|logout|providers)': process.env.BACKEND_URL || 'http://localhost:8000',
+      '/health': process.env.BACKEND_URL || 'http://localhost:8000',
     }
   }
 })

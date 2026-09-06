@@ -1,6 +1,13 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/swipass-wordmark-dark.png">
+    <img alt="Swipass" src="./assets/swipass-wordmark-light.png" width="240">
+  </picture>
+</p>
+
 # Swipass Frontend
 
-React 18 PWA — Universal Cross-Chain Intent & Execution Platform.
+React 18 PWA. Universal Cross-Chain Intent & Execution Platform.
 
 ## Stack
 - **React 18** + **TypeScript** + **Vite**
@@ -29,8 +36,8 @@ npm run dev
 
 | Route | Description |
 |-------|-------------|
-| `/` | Landing page — exact conversion of index.html with real backend stats |
-| `/app` | Command interface — exact conversion of app.html with full backend |
+| `/` | Landing page, with real backend stats |
+| `/app` | Command interface, wired to the full backend |
 | `/docs` | Developer docs with 5-language code tabs |
 | `/auth` | Clerk authentication |
 | `/dashboard/developer/*` | Project management, API keys, earnings, payouts |

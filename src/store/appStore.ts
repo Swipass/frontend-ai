@@ -1,6 +1,8 @@
 // src/store/appStore.ts
+// In-memory only (no persistence): the app's transaction history comes from the
+// connected wallet via the backend, not a device-local store. This holds only
+// the current session's in-flight commands for optimistic display.
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 interface CommandHistory {
   id: string
@@ -24,59 +26,29 @@ interface AppState {
   setUserRole: (r: string | null) => void
 }
 
-export const useAppStore = create<AppState>()(
-  persist(
-    (set, get) => ({
-      commandHistory: [],
-      addCommand: (cmd) => {
-        const id = crypto.randomUUID()
-        set((s) => ({
-          commandHistory: [
-            { ...cmd, id, timestamp: Date.now() },
-            ...s.commandHistory.slice(0, 49),
-          ],
-        }))
-        return id
-      },
-      updateCommand: (id, update) =>
-        set((s) => ({
-          commandHistory: s.commandHistory.map((c) =>
-            c.id === id ? { ...c, ...update } : c
-          ),
-        })),
-      clearHistory: () => set({ commandHistory: [] }),
-      systemPaused: false,
-      setSystemPaused: (v) => set({ systemPaused: v }),
-      userRole: null,
-      setUserRole: (r) => set({ userRole: r }),
-    }),
-    { name: 'swipass-app', partialize: (s) => ({ commandHistory: s.commandHistory }) }
-  )
-)
-
-// src/store/walletStore.ts
-interface WalletState {
-  address: string | null
-  chainId: number | null
-  chainName: string | null
-  balance: string
-  isConnected: boolean
-  connect: (address: string, chainId: number, chainName: string) => void
-  disconnect: () => void
-  setBalance: (b: string) => void
-  setChain: (id: number, name: string) => void
-}
-
-export const useWalletStore = create<WalletState>()((set) => ({
-  address: null,
-  chainId: null,
-  chainName: null,
-  balance: '0',
-  isConnected: false,
-  connect: (address, chainId, chainName) =>
-    set({ address, chainId, chainName, isConnected: true }),
-  disconnect: () =>
-    set({ address: null, chainId: null, chainName: null, balance: '0', isConnected: false }),
-  setBalance: (balance) => set({ balance }),
-  setChain: (chainId, chainName) => set({ chainId, chainName }),
+export const useAppStore = create<AppState>()((set, get) => ({
+  commandHistory: [],
+  addCommand: (cmd) => {
+    const id = crypto.randomUUID()
+    set((s) => ({
+      commandHistory: [
+        { ...cmd, id, timestamp: Date.now() },
+        ...s.commandHistory.slice(0, 49),
+      ],
+    }))
+    return id
+  },
+  updateCommand: (id, update) =>
+    set((s) => ({
+      commandHistory: s.commandHistory.map((c) =>
+        c.id === id ? { ...c, ...update } : c
+      ),
+    })),
+  clearHistory: () => set({ commandHistory: [] }),
+  systemPaused: false,
+  setSystemPaused: (v) => set({ systemPaused: v }),
+  userRole: null,
+  setUserRole: (r) => set({ userRole: r }),
 }))
+
+// The canonical wallet store lives in src/store/walletStore.ts.

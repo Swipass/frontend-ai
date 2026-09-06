@@ -1,10 +1,15 @@
 // src/components/landing/ProvidersSection.tsx
+import { ProviderInfo } from '../../services/intentService'
 
-const providers = [
-  { badge: 'Active', name: '0x Protocol', desc: 'DEX aggregation & cross-chain swaps via Permit2. Production-ready at launch.' },
-  { badge: 'Active', name: 'LI.FI', desc: 'Cross-chain DEX aggregation with broad chain coverage.' },
-  { badge: 'Active', name: 'Across Protocol', desc: 'Intent-based bridging optimized for speed and capital efficiency.' },
-  { badge: 'Open', name: '+ New Providers', desc: 'Modular provider interface — any new protocol integrates via abstract base class.' },
+interface ProvidersSectionProps {
+  /** Live provider list from intentService.getProviders(); empty until loaded. */
+  providers: ProviderInfo[]
+}
+
+// Shown before the live list resolves, and as the source of truth for the
+// integrated protocol set. Kept in sync with the backend provider registry.
+const FALLBACK_PROVIDERS = [
+  '0x', '1inch', 'Uniswap', 'LI.FI', 'Socket/Bungee', 'Across', 'Stargate',
 ]
 
 const scoringRows = [
@@ -14,7 +19,11 @@ const scoringRows = [
   { label: 'Fallback', value: 'Auto on failure' },
 ]
 
-export function ProvidersSection() {
+export function ProvidersSection({ providers }: ProvidersSectionProps) {
+  const names = providers.length
+    ? providers.map((p) => p.display_name || p.name)
+    : FALLBACK_PROVIDERS
+
   return (
     <section className="py-16 md:py-28 px-6 border-t border-dark-grey-3 bg-dark-grey-1 relative z-10">
       <div className="max-w-6xl mx-auto">
@@ -22,20 +31,30 @@ export function ProvidersSection() {
           <div>
             <div className="section-label reveal mb-6">Provider Network</div>
             <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tighter text-almost-white leading-tight reveal reveal-delay-1">
-              Multi-provider.<br /><span className="font-serif italic font-normal text-light-grey-2">Always optimal.</span>
+              Every route.<br /><span className="font-serif italic font-normal text-light-grey-2">Always optimal.</span>
             </h2>
           </div>
-          <p className="max-w-md text-light-grey-1 text-sm leading-relaxed reveal reveal-delay-2">Swipass queries every enabled provider concurrently. Intelligent scoring on output, speed, and 30-day historical success rate selects the winner. Automatic failover if a provider expires mid-flight.</p>
+          <p className="max-w-md text-light-grey-1 text-sm leading-relaxed reveal reveal-delay-2">
+            Swipass queries every integrated provider concurrently. A weighted score on output, speed, and 30-day historical success rate picks the winner, with automatic failover if a route expires mid-flight.
+          </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-dark-grey-3 border border-dark-grey-3 rounded-lg overflow-hidden mb-8">
-          {providers.map((p, i) => (
-            <div key={i} className="bg-deepest-dark p-6 transition-colors hover:bg-dark-grey-2 cursor-default">
-              <div className="inline-block px-2 py-0.5 bg-dark-grey-3 rounded text-xs uppercase tracking-wider text-light-grey-1 mb-4">{p.badge}</div>
-              <div className="font-display text-lg font-semibold text-light-grey-3 mb-2">{p.name}</div>
-              <div className="text-xs text-light-grey-1 leading-relaxed">{p.desc}</div>
+
+        {/* Live provider set, rendered as compact chips so the list scales as protocols are added. */}
+        <div className="flex flex-wrap gap-3 mb-8 reveal reveal-delay-2">
+          {names.map((name) => (
+            <div
+              key={name}
+              className="provider-card inline-flex items-center gap-2 px-4 py-2.5 bg-deepest-dark border border-dark-grey-3 rounded-full transition-colors hover:bg-dark-grey-2 cursor-default"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-light-grey-2 flex-shrink-0" />
+              <span className="font-display text-sm font-semibold text-light-grey-3">{name}</span>
             </div>
           ))}
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-deepest-dark border border-dashed border-dark-grey-3 rounded-full">
+            <span className="font-mono text-xs uppercase tracking-wider text-light-grey-1">+ modular by design</span>
+          </div>
         </div>
+
         <div className="flex flex-wrap gap-6 p-5 border border-dark-grey-3 rounded-lg bg-deepest-dark">
           {scoringRows.map((item, i) => (
             <div key={i} className={`flex flex-col gap-1 ${i === 3 ? 'md:ml-auto md:pl-6 md:border-l md:border-dark-grey-3' : ''}`}>

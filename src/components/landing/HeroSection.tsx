@@ -72,9 +72,19 @@ export function HeroSection() {
           background: var(--gray-600);
           animation: drip 2.2s ease-in-out 1.5s infinite;
         }
+        @keyframes livePulse {
+          0%, 100% { opacity: 1;   transform: scale(1); }
+          50%      { opacity: 0.3; transform: scale(0.7); }
+        }
+        .live-dot {
+          width: 6px; height: 6px; border-radius: 9999px;
+          background: var(--gray-800);
+          box-shadow: 0 0 8px 1px rgba(229,229,229,0.5);
+          animation: livePulse 1.8s ease-in-out infinite;
+        }
       `}</style>
 
-      {/* ── Very subtle ambient glow — depth behind text ────── */}
+      {/* Very subtle ambient glow: depth behind the text. */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -83,14 +93,19 @@ export function HeroSection() {
         }}
       />
 
-      {/* ── Label this is to push down the headline──────────────────────────────────────────── */}
-      <span className="ha ha-1  mb-10">
-      </span>
+      {/* Live eyebrow pill: sets the tone and pushes the headline down. */}
+      <div className="ha ha-1 mb-10 inline-flex items-center gap-2.5 px-3.5 py-1.5
+                      rounded-full border border-dark-grey-3 bg-dark-grey-1/60 backdrop-blur-sm">
+        <span className="live-dot flex-shrink-0" />
+        <span className="font-body text-[0.6rem] sm:text-[0.65rem] tracking-[0.22em] uppercase text-light-grey-2">
+          Live · Non-custodial
+        </span>
+      </div>
 
       {/* ── Headline (parallax wrapper) ─────────────────────── */}
       <div ref={hlRef} style={{ willChange: 'transform' }}>
         {/*
-          KEY CHANGE: "DeFi in plain" is now a small prefix — it reads
+          KEY CHANGE: "DeFi in plain" is now a small prefix, so it reads
           like a label setting up the payoff. "language." is massive and
           owns the entire space. This size contrast is the main upgrade.
         */}
@@ -111,7 +126,7 @@ export function HeroSection() {
         </span>
       </div>
 
-      {/* ── Tagline — each word staggers in individually ────── */}
+      {/* Tagline: each word staggers in individually. */}
       <div className="flex items-center gap-4 sm:gap-5 mt-10 md:mt-11">
         {(['Speak.', 'Swipe.', 'Settle.'] as const).map((word, i) => (
           <Fragment key={word}>
@@ -142,7 +157,7 @@ export function HeroSection() {
 
       {/* ── CTAs ───────────────────────────────────────────── */}
       <div className="ha ha-6 flex flex-col sm:flex-row gap-3 mt-9">
-        <Link to="/app"  className="sw-btn sw-btn-primary">Launch App — Free</Link>
+        <Link to="/app"  className="sw-btn sw-btn-primary">Launch App · Free</Link>
         <Link to="/docs" className="sw-btn sw-btn-ghost">Developer Docs</Link>
       </div>
 

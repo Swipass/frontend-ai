@@ -4,12 +4,21 @@ import { SystemStats } from '../../services/intentService'
 
 interface StatsBarProps {
   stats: SystemStats | null
+  /** Live provider count from intentService.getProviders() */
+  providerCount: number | null
+  /** Live chain count from intentService.getChains() */
+  chainCount: number | null
 }
 
-export function StatsBar({ stats }: StatsBarProps) {
+export function StatsBar({ stats, providerCount, chainCount }: StatsBarProps) {
+  // Prefer the live chain listing, then the stats endpoint, then a safe floor.
+  const chains = chainCount ?? stats?.total_chains_supported ?? 8
+  // Prefer the live provider listing, then the stats endpoint, then a safe floor.
+  const providers = providerCount ?? stats?.active_providers ?? 7
+
   const items = [
-    { val: stats?.total_chains_supported ?? 8, suffix: '', label: 'Supported Chains', decimals: 0 },
-    { val: 0.10, suffix: '%', label: 'Fee for Direct Users', decimals: 2 },
+    { val: chains, suffix: '+', label: 'Supported Chains', decimals: 0 },
+    { val: providers, suffix: '', label: 'Live Providers', decimals: 0 },
     { val: 50, suffix: '%', label: 'Developer Revenue Share', decimals: 0 },
     { val: 0, suffix: '', label: 'Accounts Required', decimals: 0 },
   ]

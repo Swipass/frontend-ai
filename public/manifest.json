@@ -1,7 +1,7 @@
 {
   "name": "Swipass",
   "short_name": "Swipass",
-  "description": "Universal Cross-Chain Intent & Execution Platform — Speak. Swipe. Settle.",
+  "description": "Universal Cross-Chain Intent & Execution Platform. Speak. Swipe. Settle.",
   "theme_color": "#0a0a0a",
   "background_color": "#0a0a0a",
   "display": "standalone",

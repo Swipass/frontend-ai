@@ -1,6 +1,6 @@
 // src/pages/LandingPage.tsx
 import { useEffect, useState } from 'react'
-import { intentService, SystemStats } from '../services/intentService'
+import { intentService, SystemStats, ProviderInfo } from '../services/intentService'
 import { WebGLScene } from '../components/landing/WebGLScene'
 import { Navbar } from '../components/landing/Navbar'
 import { HeroSection } from '../components/landing/HeroSection'
@@ -18,6 +18,8 @@ import { Footer } from '../components/landing/Footer'
 
 export default function LandingPage() {
   const [stats, setStats] = useState<SystemStats | null>(null)
+  const [providers, setProviders] = useState<ProviderInfo[]>([])
+  const [chainCount, setChainCount] = useState<number | null>(null)
 
   useEffect(() => {
     // Load Three.js only once
@@ -28,8 +30,10 @@ export default function LandingPage() {
       document.head.appendChild(script)
     }
 
-    // Fetch real stats
+    // Fetch real, live platform data (all optional, silently ignored if offline)
     intentService.getStats().then(setStats).catch(() => {})
+    intentService.getProviders().then(setProviders).catch(() => {})
+    intentService.getChains().then((c) => setChainCount(c.length)).catch(() => {})
 
     // Reveal on scroll
     const revealObserver = new IntersectionObserver((entries) => {
@@ -58,9 +62,9 @@ export default function LandingPage() {
       <FeaturesSection />
       <HowItWorksSection />
       <DemoSection />
-      <StatsBar stats={stats} />
+      <StatsBar stats={stats} providerCount={providers.length || null} chainCount={chainCount} />
       <DeveloperSection />
-      <ProvidersSection />
+      <ProvidersSection providers={providers} />
       <SecuritySection />
       <FAQSection />
       <CTASection />

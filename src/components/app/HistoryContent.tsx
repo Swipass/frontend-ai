@@ -4,10 +4,14 @@ import { C, Icon } from './shared'
 
 interface HistoryContentProps {
   commandHistory: any[]
+  isConnected?: boolean
 }
 
-export function HistoryContent({ commandHistory }: HistoryContentProps) {
-  if (commandHistory.length === 0)
+export function HistoryContent({ commandHistory, isConnected = false }: HistoryContentProps) {
+  if (commandHistory.length === 0) {
+    const message = isConnected
+      ? 'No transactions yet for this wallet'
+      : 'Connect your wallet to view your transaction history'
     return (
       <div
         style={{
@@ -25,12 +29,11 @@ export function HistoryContent({ commandHistory }: HistoryContentProps) {
           <Icon.Clock size={32} />
         </div>
         <p style={{ fontSize: '0.78rem', lineHeight: 1.5, margin: 0, color: C.muted }}>
-          Your command history
-          <br />
-          will appear here
+          {message}
         </p>
       </div>
     )
+  }
 
   return (
     <>

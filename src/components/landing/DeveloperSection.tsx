@@ -1,7 +1,11 @@
 // src/components/landing/DeveloperSection.tsx
 import { Link } from 'react-router-dom'
+import { useFeeRates } from '../../hooks/useFeeRates'
 
 export function DeveloperSection() {
+  // Live rates: an admin can retune fees at runtime, so nothing here is a literal.
+  const fees = useFeeRates()
+  const dash = '-'
   return (
     <section id="developers" className="py-16 md:py-28 px-6 border-t border-dark-grey-3 relative z-10">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-start">
@@ -26,8 +30,8 @@ export function DeveloperSection() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-dark-grey-2"><td className="p-4 text-sm text-light-grey-3">Direct User</td><td className="p-4 text-sm text-light-grey-3">0.10%</td><td className="p-4 text-sm text-light-grey-3">—</td></tr>
-                <tr><td className="p-4 text-sm text-almost-white font-medium">Via Developer App</td><td className="p-4 text-sm text-almost-white">0.15%</td><td className="p-4 text-sm text-almost-white font-semibold">0.075% (50%)</td></tr>
+                <tr className="border-b border-dark-grey-2"><td className="p-4 text-sm text-light-grey-3">Direct User</td><td className="p-4 text-sm text-light-grey-3">{fees.direct || dash}</td><td className="p-4 text-sm text-light-grey-3">n/a</td></tr>
+                <tr><td className="p-4 text-sm text-almost-white font-medium">Via Developer App</td><td className="p-4 text-sm text-almost-white">{fees.developer || dash}</td><td className="p-4 text-sm text-almost-white font-semibold">{fees.developerCut || dash}{fees.revenueShare ? ` (${fees.revenueShare})` : ''}</td></tr>
               </tbody>
             </table>
           </div>

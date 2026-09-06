@@ -1,6 +1,7 @@
 // src/components/landing/Navbar.tsx
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Wordmark } from '../Logo'
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -25,9 +26,9 @@ export function Navbar() {
         <style>{`.nav-scrolled.scrolled { background: rgba(10,10,10,0.85); backdrop-filter: blur(20px); border-color: var(--gray-300) !important; padding: 1rem 2rem !important; }`}</style>
         <Link
           to="/"
-          className="flex items-center gap-2 font-display text-xl sm:text-2xl font-extrabold text-almost-white tracking-tighter"
+          className="text-almost-white"
         >
-          Swipass
+          <Wordmark textClassName="text-xl sm:text-2xl" />
         </Link>
 
         <ul className="hidden md:flex gap-6 lg:gap-8">
@@ -44,7 +45,7 @@ export function Navbar() {
         </ul>
 
         <div className="hidden md:flex gap-3">
-          <Link to="/docs" className="sw-btn sw-btn-ghost">For Developers</Link>
+          <Link to="/dashboard/developer" className="sw-btn sw-btn-ghost">For Developers</Link>
           <Link to="/app" className="sw-btn sw-btn-primary">Launch App</Link>
         </div>
 
@@ -74,7 +75,7 @@ export function Navbar() {
             ))}
           </ul>
           <div className="flex gap-3">
-            <Link to="/docs" className="sw-btn sw-btn-ghost w-full justify-center" onClick={() => setMobileMenuOpen(false)}>For Developers</Link>
+            <Link to="/dashboard/developer" className="sw-btn sw-btn-ghost w-full justify-center" onClick={() => setMobileMenuOpen(false)}>For Developers</Link>
             <Link to="/app" className="sw-btn sw-btn-primary w-full justify-center" onClick={() => setMobileMenuOpen(false)}>Launch App</Link>
           </div>
         </div>

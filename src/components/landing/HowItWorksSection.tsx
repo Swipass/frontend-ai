@@ -1,7 +1,7 @@
 // src/components/landing/HowItWorksSection.tsx
 
 const steps = [
-  { n: '01', word: 'Speak', desc: 'Connect your wallet and say what you need. "Send 50 USDC from Arbitrum to Base" — or type it. No account, no KYC.' },
+  { n: '01', word: 'Speak', desc: 'Connect your wallet and say what you need. "Send 50 USDC from Arbitrum to Base", or type it. No account, no KYC.' },
   { n: '02', word: 'Swipe', desc: 'Review the optimal quote from our provider network. Lowest cost, fastest, highest reliability. Confirm with a single wallet signature.' },
   { n: '03', word: 'Settle', desc: 'Swipass handles the rest. Bridging, routing, and settlement happen automatically. Assets arrive at the destination address.' },
 ]

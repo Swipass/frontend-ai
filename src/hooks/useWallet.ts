@@ -59,7 +59,7 @@ export function useWallet() {
         await connectAsync({ connector: injected })
         return // success
       } catch (e: any) {
-        // user rejected or not available – fall back to WalletConnect
+        // user rejected or not available: fall back to WalletConnect
         if (wc) {
           await connectAsync({ connector: wc }).catch((err: any) =>
             toast.error(err?.message || 'Connection failed')

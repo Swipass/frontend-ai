@@ -1,14 +1,49 @@
 // src/components/app/TxPreviewContent.tsx
 import React from 'react'
-import { IntentResponse } from '../../services/intentService'
+import { ApprovalPayload, IntentResponse } from '../../services/intentService'
 import { C, uppercaseLabel, displayFont, borderBottom, Icon } from './shared'
 
 interface TxPreviewContentProps {
   result: IntentResponse | null
   displayChains: string[]
+  feeInfo?: { direct?: string; developer?: string }
+  tokens?: string[]
+  // How many tokens the selected chain supports in total, and the live search
+  // over them. The list is far too long to render, so this is a lookup, not a
+  // catalogue.
+  tokenTotal?: number
+  tokenQuery?: string
+  onTokenQuery?: (q: string) => void
+  approval?: ApprovalPayload | null
 }
 
-export function TxPreviewContent({ result, displayChains }: TxPreviewContentProps) {
+// What the pre-flight simulation could establish about this route, said plainly.
+// A route we could not verify is labelled as unverified, never as checked.
+function simulationNote(result: IntentResponse): { text: string; verified: boolean } {
+  if (result.simulation_passed) {
+    return { text: 'Simulated on-chain: this transaction executes', verified: true }
+  }
+  switch (result.simulation_reason) {
+    case 'needs_approval':
+      return { text: 'Verified after the approval below is signed', verified: false }
+    case 'no_rpc':
+    case 'rpc_error':
+      return { text: 'Not simulated: no node available for this chain', verified: false }
+    default:
+      return { text: 'Not simulated', verified: false }
+  }
+}
+
+export function TxPreviewContent({
+  result,
+  displayChains,
+  feeInfo,
+  tokens,
+  tokenTotal,
+  tokenQuery,
+  onTokenQuery,
+  approval,
+}: TxPreviewContentProps) {
   if (!result)
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -71,6 +106,72 @@ export function TxPreviewContent({ result, displayChains }: TxPreviewContentProp
             ))}
           </div>
         </div>
+        {tokens && (
+          <div>
+            <div
+              style={{
+                ...uppercaseLabel,
+                marginBottom: '0.6rem',
+                paddingBottom: '0.4rem',
+                ...borderBottom,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'baseline',
+                gap: '0.5rem',
+              }}
+            >
+              <span>Supported Tokens</span>
+              {!!tokenTotal && (
+                <span style={{ color: C.muted, letterSpacing: 0 }}>
+                  {tokenTotal.toLocaleString()} on this chain
+                </span>
+              )}
+            </div>
+            {onTokenQuery && (
+              <input
+                value={tokenQuery || ''}
+                onChange={e => onTokenQuery(e.target.value)}
+                placeholder="Search a token"
+                style={{
+                  width: '100%',
+                  marginBottom: '0.6rem',
+                  padding: '0.4rem 0.6rem',
+                  background: C.surface,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  color: C.label,
+                  fontFamily: "'DM Mono',monospace",
+                  fontSize: '0.7rem',
+                  outline: 'none',
+                }}
+              />
+            )}
+            {tokens.length === 0 && (
+              <p style={{ fontSize: '0.68rem', color: C.muted, margin: 0 }}>
+                {tokenQuery
+                  ? `No token matching "${tokenQuery}" on this chain.`
+                  : 'No tokens resolved for this chain yet.'}
+              </p>
+            )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+              {tokens.map(t => (
+                <span
+                  key={t}
+                  style={{
+                    padding: '0.25rem 0.55rem',
+                    background: C.surface,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 20,
+                    fontSize: '0.66rem',
+                    color: C.body,
+                  }}
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
         <div>
           <div
             style={{
@@ -84,9 +185,9 @@ export function TxPreviewContent({ result, displayChains }: TxPreviewContentProp
             Fee Structure
           </div>
           {[
-            ['Direct use fee', '0.10%'],
-            ['Via developer app', '0.15%'],
-            ['Gas estimate', '~$2–8'],
+            ['Direct use fee', feeInfo?.direct || '-'],
+            ['Via developer app', feeInfo?.developer || '-'],
+            ['Gas', 'Shown per route at quote time'],
           ].map(([l, v]) => (
             <div
               key={l}
@@ -105,6 +206,18 @@ export function TxPreviewContent({ result, displayChains }: TxPreviewContentProp
         </div>
       </div>
     )
+
+  // Platform fee % is derived from the quote's fee_amount vs from_amount,
+  // never a hardcoded rate.
+  const feePctNum = (() => {
+    const fee = parseFloat(result.quote.fee_amount)
+    const from = parseFloat(result.quote.from_amount)
+    if (!isFinite(fee) || !isFinite(from) || from === 0) return null
+    return (fee / from) * 100
+  })()
+  const feeLabel = `${result.quote.fee_amount} ${result.quote.fee_token}${
+    feePctNum != null ? ` (${feePctNum.toFixed(2)}%)` : ''
+  }`
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -206,10 +319,15 @@ export function TxPreviewContent({ result, displayChains }: TxPreviewContentProp
       </div>
 
       {[
+        // The floor is what the user is actually guaranteed on chain, so it is
+        // shown next to the estimate rather than left in the response.
         [
-          'Platform fee',
-          `${result.quote.fee_amount} ${result.quote.fee_token} (0.10%)`,
+          'Guaranteed minimum',
+          `${parseFloat(result.quote.guaranteed_to_amount || result.quote.to_amount).toFixed(4)} ${
+            result.quote.to_token
+          }`,
         ],
+        ['Platform fee', feeLabel],
         ['Est. gas', `~$${result.quote.estimated_gas_usd}`],
         ['Est. time', `~${result.quote.estimated_time_seconds}s`],
         ['Provider', result.selected_provider],
@@ -237,6 +355,51 @@ export function TxPreviewContent({ result, displayChains }: TxPreviewContentProp
           </span>
         </div>
       ))}
+
+      {approval && (
+        <div
+          style={{
+            marginTop: '0.75rem',
+            padding: '0.65rem 0.75rem',
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 6,
+          }}
+        >
+          <div style={{ ...uppercaseLabel, marginBottom: '0.3rem', display: 'block' }}>
+            Approval required
+          </div>
+          <div style={{ fontSize: '0.72rem', color: C.label, lineHeight: 1.5 }}>
+            {approval.is_reset
+              ? `${approval.token_symbol} requires its allowance to be reset before a new one is set.`
+              : `${result.selected_provider} must be allowed to move your ${approval.token_symbol}.`}{' '}
+            You sign this first, then the transaction.
+          </div>
+        </div>
+      )}
+
+      <div
+        style={{
+          marginTop: '0.75rem',
+          padding: '0.65rem 0.75rem',
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 6,
+        }}
+      >
+        <div style={{ ...uppercaseLabel, marginBottom: '0.3rem', display: 'block' }}>
+          Pre-flight check
+        </div>
+        <div
+          style={{
+            fontSize: '0.72rem',
+            color: simulationNote(result).verified ? C.label : C.muted,
+            lineHeight: 1.5,
+          }}
+        >
+          {simulationNote(result).text}
+        </div>
+      </div>
 
       <div
         style={{

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentColor" role="img" aria-label="Swipass">
+  <rect x="23.5" y="31" width="5.5" height="19" rx="2.75"/>
+  <rect x="35" y="31" width="5.5" height="19" rx="2.75"/>
+  <path d="M32 8 C 33 19 34 26 40 31 L 24 31 C 30 26 31 19 32 8 Z"/>
+</svg>

@@ -11,7 +11,7 @@ export function CTASection() {
         </h2>
         <p className="text-light-grey-1 text-sm md:text-base leading-relaxed mt-6 mb-8 reveal reveal-delay-1">No account. No complexity. Connect your wallet and issue your first cross-chain command in under 30 seconds.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-4 reveal reveal-delay-2">
-          <Link to="/app" className="sw-btn sw-btn-primary text-sm md:text-base px-6 py-3">Launch App — Free</Link>
+          <Link to="/app" className="sw-btn sw-btn-primary text-sm md:text-base px-6 py-3">Launch App · Free</Link>
           <Link to="/docs" className="sw-btn sw-btn-ghost text-sm md:text-base px-6 py-3">Developer Docs</Link>
         </div>
       </div>

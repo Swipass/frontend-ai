@@ -11,8 +11,6 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/clerk-js": "^6.7.4",
-    "@clerk/clerk-react": "^5.61.5",
     "@rainbow-me/rainbowkit": "^2.2.0",
     "@react-three/drei": "^9.105.6",
     "@react-three/fiber": "^8.16.8",

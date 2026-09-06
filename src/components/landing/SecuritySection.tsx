@@ -1,7 +1,7 @@
 // src/components/landing/SecuritySection.tsx
 
 const securityItems = [
-  { title: 'Global Circuit Breaker', desc: 'Super Admin can pause the entire intent system instantly — all requests receive 503.' },
+  { title: 'Global Circuit Breaker', desc: 'Super Admin can pause the entire intent system instantly. Every request then receives a 503.' },
   { title: 'Privacy-First Voice', desc: 'Vosk runs as WebAssembly. Transcription is entirely local. Only text commands are transmitted.' },
   { title: 'API Key Hashing', desc: 'All developer keys are bcrypt-hashed before storage. Plain-text shown once at creation.' },
   { title: 'Rate Limiting', desc: 'Redis-backed: 60 req/min per API key, 20 req/min per IP. Abuse auto-detected.' },

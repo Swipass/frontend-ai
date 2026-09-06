@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Grey Palette
+        // XOT Grey palette, dark scale (semantic names kept for existing usage).
         'deepest-dark': '#0a0a0a',
         'dark-grey-1': '#111111',
         'dark-grey-2': '#1a1a1a',
@@ -16,10 +16,26 @@ export default {
         'light-grey-3': '#d4d4d4',
         'light-grey-4': '#e5e5e5',
         'almost-white': '#f5f5f5',
+        // Canonical 10-step scale, driven by CSS variables so light mode can
+        // override them. Use these (bg-gray-100, text-gray-900, ...) going forward.
+        gray: {
+          50: 'var(--gray-50)',
+          100: 'var(--gray-100)',
+          200: 'var(--gray-200)',
+          300: 'var(--gray-300)',
+          400: 'var(--gray-400)',
+          500: 'var(--gray-500)',
+          600: 'var(--gray-600)',
+          700: 'var(--gray-700)',
+          800: 'var(--gray-800)',
+          900: 'var(--gray-900)',
+        },
       },
       fontFamily: {
-        display: ['Outfit', 'sans-serif'],
+        display: ['Syne', 'sans-serif'],
         body: ['DM Mono', 'monospace'],
+        // Readable sans for long-form prose (docs). Code stays monospace.
+        sans: ['Inter', 'system-ui', 'sans-serif'],
         serif: ['Instrument Serif', 'serif'],
       },
       animation: {

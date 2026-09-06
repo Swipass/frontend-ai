@@ -1,15 +1,20 @@
 // src/App.tsx
-
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
-import { SignedIn, SignedOut } from '@clerk/clerk-react'
 import LandingPage from './pages/LandingPage'
 import AppPage from './pages/AppPage'
 import DeveloperDashboard from './pages/DeveloperDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import DocsPage from './pages/DocsPage'
 import AuthPage from './pages/Auth/AuthPage'
+import { useAuth } from './hooks/useAuth'
+import { WalletProvider } from './components/WalletProvider'
+
+// Pointer-based check: touch devices get the native cursor, never the custom one.
+function isCoarsePointer() {
+  return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
+}
 
 function Cursor() {
   const dotRef = useRef<HTMLDivElement>(null)
@@ -53,22 +58,27 @@ function Cursor() {
   )
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <SignedIn>{children}</SignedIn>
-      <SignedOut>
-        <Navigate to="/auth" replace />
-      </SignedOut>
-    </>
-  )
+function ProtectedRoute({ children, requireAdmin }: { children: React.ReactNode; requireAdmin?: boolean }) {
+  const { isLoaded, isSignedIn, isAdmin } = useAuth()
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-deepest-dark">
+        <div className="w-6 h-6 border-2 border-mid-grey border-t-almost-white rounded-full animate-spin" />
+      </div>
+    )
+  }
+  if (!isSignedIn) return <Navigate to="/auth" replace />
+  if (requireAdmin && !isAdmin) return <Navigate to="/dashboard/developer" replace />
+  return <>{children}</>
 }
 
 export default function App() {
+  // Touch devices keep the native cursor; the custom cursor is desktop-only.
+  const [coarse] = useState(isCoarsePointer())
   return (
     <>
       <div className="noise-overlay" />
-      <Cursor />
+      {!coarse && <Cursor />}
       <Toaster
         position="bottom-right"
         toastOptions={{
@@ -83,22 +93,33 @@ export default function App() {
       />
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/app" element={<AppPage />} />
+        <Route
+          path="/app"
+          element={
+            <WalletProvider>
+              <AppPage />
+            </WalletProvider>
+          }
+        />
         <Route path="/docs" element={<DocsPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route
           path="/dashboard/developer/*"
           element={
             <ProtectedRoute>
-              <DeveloperDashboard />
+              <WalletProvider>
+                <DeveloperDashboard />
+              </WalletProvider>
             </ProtectedRoute>
           }
         />
         <Route
           path="/dashboard/admin/*"
           element={
-            <ProtectedRoute>
-              <AdminDashboard />
+            <ProtectedRoute requireAdmin>
+              <WalletProvider>
+                <AdminDashboard />
+              </WalletProvider>
             </ProtectedRoute>
           }
         />
