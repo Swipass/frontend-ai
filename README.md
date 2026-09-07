@@ -32,6 +32,31 @@ npm run dev
 - Dev Dashboard: http://localhost:5173/dashboard/developer
 - Admin Dashboard: http://localhost:5173/dashboard/admin
 
+## Pointing the app at your API
+
+The app reads its chains, tokens, provider ratings and fee rates from the
+backend, so it needs to know where that is. Vite inlines `VITE_` variables into
+the bundle **at build time**, which means the production value comes from the
+build environment, not from a file in this repository:
+
+- **Local:** `.env` with `VITE_API_URL=http://localhost:8000` (the dev server
+  also proxies the API paths, so this works out of the box).
+- **Production:** set `VITE_API_URL` in the Vercel project settings
+  (Settings, Environment Variables) and redeploy. Editing a file here does not
+  change what is live.
+
+Three values have to agree, or sign-in and the app page fail in ways that look
+unrelated to each other:
+
+| Where | Value |
+|---|---|
+| Frontend `VITE_API_URL` | `https://<your-api-domain>` |
+| Backend `ALLOWED_ORIGINS` | the frontend origin, e.g. `https://www.swipass.com` |
+| Backend `OAUTH_REDIRECT_BASE_URL`, and the redirect URI registered with Google and GitHub | `https://<your-api-domain>`, callback `.../auth/callback/<provider>` |
+
+If the API is unreachable the landing page and docs still render; the app page
+reports that it cannot load its networks rather than showing a stale list.
+
 ## Pages
 
 | Route | Description |
