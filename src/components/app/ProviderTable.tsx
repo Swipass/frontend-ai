@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react'
 import { IntentResponse, QuoteResponse, ProviderRating } from '../../services/intentService'
 import { Icon } from './shared'
+import { cexDelta, formatDelta, venueList } from './benchmark'
 
 interface ProviderTableProps {
   result: IntentResponse
@@ -111,6 +112,7 @@ export function ProviderTable({ result, selectedProvider, onSelectProvider, rati
         {sortedQuotes.map((q: QuoteResponse, i: number) => {
           const isSelected = q.provider === selectedProvider
           const rLabel = ratingLabel(ratingMap.get(q.provider.toLowerCase()))
+          const delta = cexDelta(q, result.benchmark)
           return (
             <button
               key={q.quote_id || q.provider || i}
@@ -146,6 +148,14 @@ export function ProviderTable({ result, selectedProvider, onSelectProvider, rati
                     <span>~{q.estimated_time_seconds}s</span>
                     <span>·</span>
                     <span>score {q.score.toFixed(1)}</span>
+                    {delta != null && (
+                      <>
+                        <span>·</span>
+                        <span className={delta >= 0 ? 'text-[color:var(--ink-2)]' : undefined}>
+                          {formatDelta(delta)} vs CEX
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -177,6 +187,13 @@ export function ProviderTable({ result, selectedProvider, onSelectProvider, rati
           )
         })}
       </div>
+
+      {result.benchmark && (
+        <p className="mt-2.5 text-[0.7rem] leading-relaxed text-[color:var(--ink-4)]">
+          vs CEX compares each route with the mid price on {venueList(result.benchmark.venues)}, before exchange
+          fees. Reference only: nothing trades on an exchange.
+        </p>
+      )}
     </div>
   )
 }

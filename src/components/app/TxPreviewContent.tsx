@@ -2,6 +2,7 @@
 import React from 'react'
 import { ApprovalPayload, IntentResponse } from '../../services/intentService'
 import { C, uppercaseLabel, displayFont, borderBottom, Icon } from './shared'
+import { cexDelta, formatDelta } from './benchmark'
 
 interface TxPreviewContentProps {
   result: IntentResponse | null
@@ -219,6 +220,11 @@ export function TxPreviewContent({
     feePctNum != null ? ` (${feePctNum.toFixed(2)}%)` : ''
   }`
 
+  // The selected route against the centralised exchange mid price, shown only
+  // when the backend could read one.
+  const benchDelta = cexDelta(result.quote, result.benchmark)
+  const benchLabel = benchDelta != null ? `${formatDelta(benchDelta)} vs CEX mid` : null
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       <div
@@ -334,6 +340,7 @@ export function TxPreviewContent({
         ['Est. time', `~${result.quote.estimated_time_seconds}s`],
         ['Provider', result.selected_provider],
         ['Route score', `${result.quote.score.toFixed(1)} / 100`],
+        ...(benchLabel ? [['vs CEX price', benchLabel]] : []),
       ].map(([l, v]) => (
         <div
           key={l}

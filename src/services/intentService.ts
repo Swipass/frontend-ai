@@ -68,6 +68,16 @@ export interface BuildTransactionResponse {
   simulation_reason: string
 }
 
+// What the same trade returns at the centralised exchange mid price. Reference
+// only: nothing trades on an exchange.
+export interface PriceBenchmark {
+  reference_to_amount: string
+  // The selected route against the reference, in percent. Positive is better.
+  delta_percent: string
+  venues: string[]
+  computed_at: number
+}
+
 export interface IntentResponse {
   intent_id: string
   trace_id?: string
@@ -82,6 +92,7 @@ export interface IntentResponse {
   simulation_reason?: string
   approval?: ApprovalPayload | null
   requires_approval?: boolean
+  benchmark?: PriceBenchmark | null
 }
 
 export interface SystemStats {
