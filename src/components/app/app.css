@@ -47,8 +47,8 @@
 .site .app-ring { animation: spin 1.2s linear infinite; }
 .site .app-ring-rev { animation: spin 2s linear infinite reverse; }
 
-.site .app-rise { animation: appRise 0.7s var(--ease) both; }
+/* Leaves nothing applied once it ends; see the motion rule in site.css. */
+.site .app-rise { animation: appRise 0.45s var(--ease) backwards; }
 @keyframes appRise {
-  from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(10px); }
 }

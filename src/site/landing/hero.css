@@ -82,7 +82,9 @@
   50% { transform: translateY(-8px); }
 }
 
-.site .hero-in { animation: heroIn 1.3s var(--ease) both; animation-delay: var(--d, 0ms); }
+/* `backwards`: the hidden first frame holds through the delay, and nothing is
+   left applied after the end (see the motion rule in site.css). */
+.site .hero-in { animation: heroIn 1.3s var(--ease) backwards; animation-delay: var(--d, 0ms); }
 @keyframes heroIn {
   from { opacity: 0; transform: translateY(20px); filter: blur(10px); }
   to { opacity: 1; transform: none; filter: none; }
@@ -111,7 +113,7 @@
   to { transform: scaleX(1); }
 }
 
-.site .word-swap { animation: wordSwap 0.7s var(--ease) both; }
+.site .word-swap { animation: wordSwap 0.7s var(--ease) backwards; }
 @keyframes wordSwap {
   from { opacity: 0; transform: translateY(8px); filter: blur(4px); }
   to { opacity: 1; transform: none; filter: none; }

@@ -55,8 +55,13 @@
 .site.dash tbody tr { transition: background 0.3s var(--ease); }
 .site.dash tbody tr:hover { background: rgba(255, 255, 255, 0.025); }
 
-.site.dash .dash-rise { animation: dashRise 0.7s var(--ease) both; }
+/* Page change: a short opacity lift that leaves nothing applied afterwards
+   (see the motion rule in site.css). Blur is deliberately absent: animating a
+   filter over a whole page is expensive to paint. */
+.site.dash .dash-rise { animation: dashRise 0.2s ease-out backwards; }
 @keyframes dashRise {
-  from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(4px); }
 }
+
+/* Working screens stay still behind the content: no drifting glow to repaint. */
+.site.dash .hero-blob { animation: none; }

@@ -58,7 +58,7 @@ export function DashShell({
 
   return (
     <div className="site dash min-h-screen bg-[#070707]">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-3 bg-[#070707]/80 px-3 backdrop-blur-xl sm:px-4">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-3 bg-[#070707]/90 px-3 backdrop-blur-md sm:px-4">
         <div className="flex items-center gap-3 sm:gap-6">
           <button
             type="button"

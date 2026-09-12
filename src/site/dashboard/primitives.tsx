@@ -3,6 +3,7 @@
 // language. Each dashboard's shared.tsx re-exports these, so pages keep their
 // imports and every panel draws from one set.
 import { useState, type ReactNode } from 'react'
+import { Dialog } from '../../components/Dialog'
 
 export function fmtUsd(n: number | undefined | null, dp = 2): string {
   const v = Number(n || 0)
@@ -83,20 +84,21 @@ export function CopyButton({ text, label = 'Copy' }: { text: string; label?: str
   )
 }
 
-function Overlay({ onClose, children, wide }: { onClose: () => void; children: ReactNode; wide?: boolean }) {
+// Dashboard dialogs: the shared Dialog (portal, scrolling backdrop) with the
+// dashboard surface and style scope.
+function Overlay({ onClose, children, wide, title }: { onClose: () => void; children: ReactNode; wide?: boolean; title: string }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        onClick={e => e.stopPropagation()}
-        className={`dash-rise max-h-[85vh] w-full overflow-y-auto rounded-3xl border border-white/[0.1] bg-[#111111] p-6 shadow-[0_40px_100px_-30px_rgba(0,0,0,1)] sm:p-7 ${
-          wide ? 'max-w-2xl' : 'max-w-md'
-        }`}
-      >
-        {children}
-      </div>
-    </div>
+    <Dialog
+      open
+      onClose={onClose}
+      label={title}
+      scope="site dash"
+      className={`rounded-3xl border border-white/[0.1] bg-[#111111] p-6 shadow-[0_40px_100px_-30px_rgba(0,0,0,1)] sm:p-7 ${
+        wide ? 'max-w-2xl' : 'max-w-md'
+      }`}
+    >
+      {children}
+    </Dialog>
   )
 }
 
@@ -120,7 +122,7 @@ export function ConfirmDialog({
 }) {
   if (!open) return null
   return (
-    <Overlay onClose={onCancel}>
+    <Overlay onClose={onCancel} title={title}>
       <div className="text-[1.35rem] font-light tracking-[-0.03em] text-[color:var(--ink)]">{title}</div>
       <div className="mb-7 mt-3 text-[0.9rem] leading-relaxed text-[color:var(--ink-3)]">{message}</div>
       <div className="flex justify-end gap-2.5">
@@ -150,7 +152,7 @@ export function Modal({
 }) {
   if (!open) return null
   return (
-    <Overlay onClose={onClose} wide={wide}>
+    <Overlay onClose={onClose} wide={wide} title={title}>
       <div className="mb-5 flex items-center justify-between">
         <div className="text-[1.35rem] font-light tracking-[-0.03em] text-[color:var(--ink)]">{title}</div>
         <button

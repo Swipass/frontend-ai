@@ -117,6 +117,17 @@
   background-position: -0.5px -0.5px;
 }
 
+/* Motion rule for the whole product: an entrance animation must not leave a
+   transform or filter applied once it ends (fill-mode `backwards`, never
+   `both` or `forwards` on anything that can contain content). A transform or
+   filter left on an element makes it the anchor for every `position: fixed`
+   descendant, which is how a dialog lands half under the page header. Dialogs
+   themselves go through components/Dialog.tsx, which portals to <body>. */
+.dialog-in { animation: dialogIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+@keyframes dialogIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+}
+
 /* Scroll reveal. Elements start hidden only when motion is allowed. */
 .site [data-reveal] {
   transition: opacity 1s var(--ease), transform 1s var(--ease), filter 1s var(--ease);

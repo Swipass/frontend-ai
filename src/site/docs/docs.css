@@ -42,10 +42,10 @@
 }
 
 /* Each section animates in when the pager or sidebar reveals it. */
-.site #doc-article > section { animation: docIn 0.7s var(--ease) both; }
+/* Leaves nothing applied once it ends; see the motion rule in site.css. */
+.site #doc-article > section { animation: docIn 0.35s var(--ease) backwards; }
 @keyframes docIn {
-  from { opacity: 0; transform: translateY(14px); filter: blur(4px); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(8px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

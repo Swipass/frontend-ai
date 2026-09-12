@@ -1,5 +1,6 @@
 // src/components/app/BottomSheet.tsx
 import React, { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from './shared'
 
 interface BottomSheetProps {
@@ -19,8 +20,9 @@ export function BottomSheet({ open, onClose, title, children, maxHeight = '88vh'
     }
   }, [open])
 
-  return (
-    <>
+  // Rendered into <body> like every dialog, so no ancestor can clip or re-anchor it.
+  return createPortal(
+    <div className="site">
       <div
         onClick={onClose}
         aria-hidden="true"
@@ -29,8 +31,10 @@ export function BottomSheet({ open, onClose, title, children, maxHeight = '88vh'
         }`}
       />
       <div
-        role="dialog"
-        aria-modal="true"
+        // A closed sheet stays mounted (so it can slide), but is not a dialog.
+        role={open ? 'dialog' : undefined}
+        aria-modal={open ? true : undefined}
+        aria-hidden={!open}
         aria-label={title}
         className="fixed inset-x-0 bottom-0 z-[401] flex flex-col overflow-hidden rounded-t-[28px] border-t border-white/[0.1] bg-[#0d0d0d]/95 backdrop-blur-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
         style={{
@@ -57,6 +61,7 @@ export function BottomSheet({ open, onClose, title, children, maxHeight = '88vh'
           {children}
         </div>
       </div>
-    </>
+    </div>,
+    document.body,
   )
 }
