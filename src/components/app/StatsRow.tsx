@@ -34,18 +34,21 @@ export function StatsRow({ totalVolume, settled, total, centered = false }: Stat
           <div
             style={{
               ...displayFont,
-              fontSize: centered ? '1.1rem' : '0.95rem',
-              fontWeight: 700,
-              color: C.hi,
-              letterSpacing: '-0.02em',
+              fontSize: centered ? '1.6rem' : '1.35rem',
+              fontWeight: 300,
+              color: C.max,
+              letterSpacing: '-0.04em',
+              lineHeight: 1,
             }}
           >
             {s.val}
           </div>
           <div
             style={{
+              fontFamily: "'Geist Mono', ui-monospace, monospace",
               fontSize: '0.58rem',
-              letterSpacing: '0.1em',
+              letterSpacing: '0.14em',
+              marginTop: '0.35rem',
               textTransform: 'uppercase',
               color: C.muted,
             }}

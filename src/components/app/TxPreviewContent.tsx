@@ -85,7 +85,7 @@ export function TxPreviewContent({
                   padding: '0.4rem 0.6rem',
                   background: C.surface,
                   border: `1px solid ${C.border}`,
-                  borderRadius: 5,
+                  borderRadius: 12,
                   fontSize: '0.68rem',
                   color: C.body,
                   display: 'flex',
@@ -138,9 +138,9 @@ export function TxPreviewContent({
                   padding: '0.4rem 0.6rem',
                   background: C.surface,
                   border: `1px solid ${C.border}`,
-                  borderRadius: 6,
+                  borderRadius: 14,
                   color: C.label,
-                  fontFamily: "'DM Mono',monospace",
+                  fontFamily: "'Geist Mono',ui-monospace,monospace",
                   fontSize: '0.7rem',
                   outline: 'none',
                 }}
@@ -237,10 +237,11 @@ export function TxPreviewContent({
           <div
             style={{
               ...displayFont,
-              fontSize: '1.35rem',
-              fontWeight: 700,
+              fontSize: '1.75rem',
+              fontWeight: 300,
               color: C.max,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.045em',
+              lineHeight: 1.1,
             }}
           >
             {result.quote.from_amount}
@@ -301,10 +302,11 @@ export function TxPreviewContent({
           <div
             style={{
               ...displayFont,
-              fontSize: '1.35rem',
-              fontWeight: 700,
+              fontSize: '1.75rem',
+              fontWeight: 300,
               color: C.max,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.045em',
+              lineHeight: 1.1,
             }}
           >
             {parseFloat(result.quote.to_amount).toFixed(4)}
@@ -348,7 +350,7 @@ export function TxPreviewContent({
           <span
             style={{
               color: l === 'Provider' ? C.max : C.label,
-              fontFamily: "'DM Mono',monospace",
+              fontFamily: "'Geist Mono',ui-monospace,monospace",
             }}
           >
             {v}
@@ -363,7 +365,7 @@ export function TxPreviewContent({
             padding: '0.65rem 0.75rem',
             background: C.surface,
             border: `1px solid ${C.border}`,
-            borderRadius: 6,
+            borderRadius: 14,
           }}
         >
           <div style={{ ...uppercaseLabel, marginBottom: '0.3rem', display: 'block' }}>
@@ -384,7 +386,7 @@ export function TxPreviewContent({
           padding: '0.65rem 0.75rem',
           background: C.surface,
           border: `1px solid ${C.border}`,
-          borderRadius: 6,
+          borderRadius: 14,
         }}
       >
         <div style={{ ...uppercaseLabel, marginBottom: '0.3rem', display: 'block' }}>
@@ -407,7 +409,7 @@ export function TxPreviewContent({
           padding: '0.65rem 0.75rem',
           background: C.surface,
           border: `1px solid ${C.border}`,
-          borderRadius: 6,
+          borderRadius: 14,
         }}
       >
         <div style={{ ...uppercaseLabel, marginBottom: '0.3rem', display: 'block' }}>

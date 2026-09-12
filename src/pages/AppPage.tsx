@@ -6,12 +6,17 @@ import { AppLayoutDesktop } from '../components/app/AppLayoutDesktop'
 import { AppLayoutMobile } from '../components/app/AppLayoutMobile'
 import { SuccessModal } from '../components/app/SuccessModal'
 import { MOBILE_BREAKPOINT } from '../components/app/constants'
+import { useCursorHover } from '../site/hooks'
+import '../site/ui'
+import '../site/landing/hero.css'
+import '../components/app/app.css'
 
 export default function AppPage() {
   const ctx = useIntentExecution()
+  useCursorHover()
 
   return (
-    <>
+    <div className="site">
       <style>{`
         @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes spin { to{transform:rotate(360deg)} }
@@ -31,6 +36,6 @@ export default function AppPage() {
       />
 
       {ctx.isMobile ? <AppLayoutMobile ctx={ctx} /> : <AppLayoutDesktop ctx={ctx} />}
-    </>
+    </div>
   )
 }

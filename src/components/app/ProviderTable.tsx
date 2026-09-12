@@ -1,7 +1,7 @@
 // src/components/app/ProviderTable.tsx
 import { useMemo, useState } from 'react'
 import { IntentResponse, QuoteResponse, ProviderRating } from '../../services/intentService'
-import { C, uppercaseLabel } from './shared'
+import { Icon } from './shared'
 
 interface ProviderTableProps {
   result: IntentResponse
@@ -76,45 +76,30 @@ export function ProviderTable({ result, selectedProvider, onSelectProvider, rati
   }, [result.all_quotes, sort, hasRatings, ratingMap])
 
   return (
-    <div style={{ marginTop: '1rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '0.5rem',
-          flexWrap: 'wrap',
-          marginBottom: '0.6rem',
-        }}
-      >
-        <span style={{ ...uppercaseLabel, fontSize: '0.6rem', letterSpacing: '0.12em' }}>
-          Provider Quotes - Select one to execute
-        </span>
+    <div className="mt-2">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <span className="kicker">Provider quotes</span>
+        <span className="text-[0.74rem] text-[color:var(--ink-4)]">Select one to execute</span>
       </div>
 
       {/* Sort / filter controls */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.6rem' }}>
+      <div className="mb-3 flex flex-wrap gap-1.5">
         {SORT_OPTIONS.map(opt => {
           const active = sort === opt.id
           const disabled = opt.id === 'reliable' && !hasRatings
           return (
             <button
               key={opt.id}
+              type="button"
               onClick={() => setSort(opt.id)}
               title={disabled ? 'No reliability data yet - showing best output' : undefined}
-              style={{
-                padding: '0.3rem 0.7rem',
-                background: active ? C.mid : C.surface,
-                border: `1px solid ${active ? C.mid : C.border}`,
-                borderRadius: 20,
-                fontSize: '0.62rem',
-                letterSpacing: '0.04em',
-                color: active ? C.max : disabled ? C.mid : C.muted,
-                cursor: 'pointer',
-                fontFamily: "'DM Mono',monospace",
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s',
-              }}
+              className={`whitespace-nowrap rounded-full border px-3 py-1 text-[0.74rem] transition-all duration-300 ${
+                active
+                  ? 'border-transparent bg-[color:var(--ink)] text-[#0a0a0a]'
+                  : disabled
+                  ? 'border-white/[0.06] text-[color:var(--ink-4)]'
+                  : 'border-white/[0.1] text-[color:var(--ink-3)] hover:text-[color:var(--ink)]'
+              }`}
             >
               {opt.label}
             </button>
@@ -122,102 +107,71 @@ export function ProviderTable({ result, selectedProvider, onSelectProvider, rati
         })}
       </div>
 
-      <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+      <div className="flex flex-col gap-1.5">
         {sortedQuotes.map((q: QuoteResponse, i: number) => {
           const isSelected = q.provider === selectedProvider
-          const rating = ratingMap.get(q.provider.toLowerCase())
-          const rLabel = ratingLabel(rating)
+          const rLabel = ratingLabel(ratingMap.get(q.provider.toLowerCase()))
           return (
             <button
               key={q.quote_id || q.provider || i}
+              type="button"
               onClick={() => onSelectProvider(q.provider)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '0.5rem',
-                flexWrap: 'wrap',
-                padding: '0.7rem 0.9rem',
-                borderBottom: i < sortedQuotes.length - 1 ? `1px solid ${C.border}` : 'none',
-                background: isSelected ? C.surface : C.panel,
-                width: '100%',
-                border: 'none',
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontFamily: "'DM Mono',monospace",
-                transition: 'background 0.2s',
-                outline: isSelected ? `1px solid ${C.max}` : 'none',
-                outlineOffset: -1,
-              }}
+              aria-pressed={isSelected}
+              className={`flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-2.5 rounded-2xl border px-4 pb-3 pt-3.5 text-left transition-all duration-300 ${
+                isSelected
+                  ? 'border-white/40 bg-white/[0.07]'
+                  : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.16] hover:bg-white/[0.04]'
+              }`}
             >
-              {/* Left: provider + rating + score */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                  <span
-                    style={{
-                      fontSize: '0.75rem',
-                      color: isSelected ? C.max : C.body,
-                      fontWeight: isSelected ? 600 : 400,
-                    }}
-                  >
-                    {q.provider}
-                  </span>
-                  {rLabel && (
-                    <span
-                      style={{
-                        padding: '0.08rem 0.4rem',
-                        background: C.surface2,
-                        borderRadius: 3,
-                        fontSize: '0.56rem',
-                        color: C.body,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {rLabel}
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-[0.8rem] font-medium ${
+                    isSelected ? 'bg-[color:var(--ink)] text-[#0a0a0a]' : 'border border-white/[0.12] text-[color:var(--ink-2)]'
+                  }`}
+                >
+                  {q.provider.charAt(0).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`text-[0.92rem] ${isSelected ? 'text-[color:var(--ink)]' : 'text-[color:var(--ink-2)]'}`}>
+                      {q.provider}
                     </span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.6rem', color: C.muted }}>
-                  <span>~{q.estimated_time_seconds}s</span>
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      padding: '0.08rem 0.4rem',
-                      background: isSelected ? C.mid : C.surface2,
-                      borderRadius: 3,
-                      color: isSelected ? C.max : C.body,
-                    }}
-                  >
-                    score {q.score.toFixed(1)}
-                  </span>
+                    {rLabel && (
+                      <span className="f-mono rounded-full bg-white/[0.07] px-2 py-0.5 text-[0.62rem] text-[color:var(--ink-3)]">
+                        {rLabel}
+                      </span>
+                    )}
+                  </div>
+                  <div className="f-mono mt-0.5 flex items-center gap-2 text-[0.66rem] text-[color:var(--ink-4)]">
+                    <span>~{q.estimated_time_seconds}s</span>
+                    <span>·</span>
+                    <span>score {q.score.toFixed(1)}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Right: output + select state */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.75rem', color: isSelected ? C.max : C.body }}>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className={`f-mono text-[0.95rem] ${isSelected ? 'text-[color:var(--ink)]' : 'text-[color:var(--ink-2)]'}`}>
                     {parseFloat(q.to_amount).toFixed(4)}
                   </div>
-                  <div style={{ fontSize: '0.56rem', color: C.muted }}>{q.to_token}</div>
+                  <div className="f-mono text-[0.64rem] text-[color:var(--ink-4)]">{q.to_token}</div>
                 </div>
                 <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    padding: '0.15rem 0.5rem',
-                    background: isSelected ? C.mid : C.surface2,
-                    borderRadius: 3,
-                    fontSize: '0.56rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    color: isSelected ? C.max : C.muted,
-                    whiteSpace: 'nowrap',
-                  }}
+                  className={`grid h-6 w-6 place-items-center rounded-full border transition-colors ${
+                    isSelected ? 'border-transparent bg-[color:var(--ink)] text-[#0a0a0a]' : 'border-white/[0.14] text-transparent'
+                  }`}
+                  aria-hidden="true"
                 >
-                  {isSelected ? '✓ Selected' : 'Choose'}
+                  <Icon.Check size={12} />
                 </span>
+              </div>
+
+              <div className="h-px w-full basis-full overflow-hidden rounded-full bg-white/[0.06]" aria-hidden="true">
+                <div
+                  className={`h-px transition-[width] duration-700 ${isSelected ? 'bg-white/80' : 'bg-white/30'}`}
+                  style={{ width: `${Math.max(0, Math.min(100, q.score))}%` }}
+                />
               </div>
             </button>
           )

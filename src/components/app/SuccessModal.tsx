@@ -1,5 +1,5 @@
 // src/components/app/SuccessModal.tsx
-import { C, displayFont, Icon } from './shared'
+import { Icon } from './shared'
 
 interface SuccessModalProps {
   open: boolean
@@ -17,90 +17,35 @@ export function SuccessModal({ open, txHash, explorerUrl, isMobile, onClose }: S
       onClick={e => {
         if (e.target === e.currentTarget) onClose()
       }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(10,10,10,0.92)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        backdropFilter: 'blur(10px)',
-        padding: '1rem',
-      }}
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0a0a0a]/85 p-4 backdrop-blur-xl"
     >
       <div
-        style={{
-          background: C.panel,
-          border: `1px solid ${C.border}`,
-          borderRadius: 12,
-          padding: isMobile ? '2rem 1.5rem' : '3rem 2.5rem',
-          maxWidth: 400,
-          width: '100%',
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1.25rem',
-        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settled-title"
+        className={`glass app-rise relative w-full max-w-[420px] overflow-hidden text-center ${isMobile ? 'px-6 py-9' : 'px-10 py-12'}`}
       >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            border: `1.5px solid ${C.muted}`,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: C.label,
-          }}
-        >
-          <Icon.Check size={24} />
+        <div className="pointer-events-none absolute left-1/2 top-0 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/10 blur-3xl" />
+        <div className="relative mx-auto grid h-16 w-16 place-items-center rounded-full border border-white/20 bg-white/[0.06] text-[color:var(--ink)] shadow-[0_0_40px_-6px_rgba(255,255,255,0.5)]">
+          <Icon.Check size={26} />
         </div>
-        <div
-          style={{
-            ...displayFont,
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            color: C.max,
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Transaction Settled
-        </div>
-        <p style={{ fontSize: '0.82rem', color: C.muted, lineHeight: 1.6, margin: 0 }}>
-          Your assets have been successfully bridged. The destination address will reflect the
-          balance after on-chain confirmation.
+        <div className="kicker relative mt-7">Settled</div>
+        <h2 id="settled-title" className="relative mt-2 text-[2rem] font-light leading-tight tracking-[-0.04em] text-[color:var(--ink)]">
+          Transaction <span className="f-serif italic">settled</span>
+        </h2>
+        <p className="relative mx-auto mt-3 max-w-xs text-[0.88rem] leading-relaxed text-[color:var(--ink-3)]">
+          Your assets have been successfully bridged. The destination address will reflect the balance after on-chain
+          confirmation.
         </p>
-        <div
-          style={{
-            padding: '0.6rem 0.85rem',
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            borderRadius: 5,
-            fontSize: '0.68rem',
-            color: C.muted,
-            wordBreak: 'break-all',
-            textAlign: 'left',
-            width: '100%',
-            fontFamily: "'DM Mono',monospace",
-          }}
-        >
+        <div className="f-mono relative mt-6 break-all rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-left text-[0.74rem] text-[color:var(--ink-3)]">
           {txHash.slice(0, 20)}...{txHash.slice(-8)}
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
-          <button onClick={onClose} className="sw-btn sw-btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>
-            New Command
+        <div className="relative mt-5 flex gap-2.5">
+          <button type="button" onClick={onClose} className="pill pill-dark flex-1">
+            New command
           </button>
-          <a
-            href={`${explorerUrl}${txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="sw-btn sw-btn-primary"
-            style={{ flex: 1, justifyContent: 'center', textAlign: 'center' }}
-          >
-            View on Explorer
+          <a href={`${explorerUrl}${txHash}`} target="_blank" rel="noopener noreferrer" className="pill pill-light flex-1">
+            View on explorer <Icon.ArrowUpRight size={13} />
           </a>
         </div>
       </div>

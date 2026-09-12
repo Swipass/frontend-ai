@@ -8,20 +8,35 @@ import { WalletPanelContent } from './WalletPanelContent'
 import { TxPreviewContent } from './TxPreviewContent'
 import { ConfirmButton } from './ConfirmButton'
 import { StatsRow } from './StatsRow'
-import { C, uppercaseLabel, borderBottom, PulseDot } from './shared'
+import { PulseDot } from './shared'
+import { OrbCanvas } from '../../site/landing/OrbCanvas'
 
 interface AppLayoutDesktopProps {
   ctx: IntentExecution
 }
 
-// Three-panel command center: left history, center command card, right wallet
-// + transaction preview. Side columns flex within a range so the 900-1100px
-// band stays comfortable rather than cramped.
+function PanelHeading({ title, count }: { title: string; count?: number }) {
+  return (
+    <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-5 py-4">
+      <span className="kicker">{title}</span>
+      {count !== undefined && (
+        <span className="f-mono rounded-full border border-white/[0.1] px-2 py-0.5 text-[0.62rem] text-[color:var(--ink-3)]">
+          {count}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// Three framed panels around a lit stage: history on the left, the command
+// card over the orb in the centre, wallet and transaction preview on the right.
+// Side columns flex within a range so the 900-1100px band stays comfortable.
 export function AppLayoutDesktop({ ctx }: AppLayoutDesktopProps) {
   const {
     commandHistory,
     totalVolume,
     result,
+    loading,
     displayChains,
     fromChainIdx,
     handleNetworkSwitch,
@@ -40,147 +55,78 @@ export function AppLayoutDesktop({ ctx }: AppLayoutDesktopProps) {
 
   const [netOpen, setNetOpen] = useState(false)
   const settledCount = commandHistory.filter(c => c.status === 'completed').length
+  const idle = !result && !loading
 
   return (
     <div
+      className="bg-[#070707]"
       style={{
         height: '100vh',
         overflow: 'hidden',
         display: 'grid',
-        gridTemplateRows: '56px 1fr',
-        gridTemplateColumns: 'minmax(220px, 260px) minmax(0, 1fr) minmax(280px, 340px)',
-        background: C.bg,
-        fontFamily: "'DM Mono',monospace",
+        gridTemplateRows: '64px minmax(0, 1fr)',
+        gridTemplateColumns: 'minmax(230px, 270px) minmax(0, 1fr) minmax(300px, 360px)',
+        gap: 8,
+        padding: '0 8px 8px',
       }}
     >
       <AppHeader ctx={ctx} />
 
-      <aside
-        style={{
-          gridColumn: 1,
-          gridRow: 2,
-          borderRight: `1px solid ${C.border}`,
-          background: C.panel,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            padding: '1rem 1.25rem 0.75rem',
-            ...borderBottom,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ ...uppercaseLabel, fontSize: '0.65rem', letterSpacing: '0.14em' }}>
-            Command History
-          </span>
-          <span
-            style={{
-              background: C.surface2,
-              color: C.body,
-              fontSize: '0.6rem',
-              padding: '0.15rem 0.45rem',
-              borderRadius: 10,
-            }}
-          >
-            {commandHistory.length}
-          </span>
+      <aside className="app-panel flex min-h-0 flex-col overflow-hidden" style={{ gridColumn: 1, gridRow: 2 }}>
+        <PanelHeading title="History" count={commandHistory.length} />
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 py-1">
+          <HistoryContent commandHistory={commandHistory} isConnected={isConnected} />
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem 0' }}>
-          <HistoryContent commandHistory={commandHistory} isConnected={ctx.isConnected} />
-        </div>
-        <div style={{ padding: '0.75rem 1.25rem', borderTop: `1px solid ${C.border}`, flexShrink: 0 }}>
+        <div className="shrink-0 border-t border-white/[0.06] px-5 py-4">
           <StatsRow totalVolume={totalVolume} settled={settledCount} total={commandHistory.length} />
         </div>
       </aside>
 
       <main
-        style={{
-          gridColumn: 2,
-          gridRow: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '2rem',
-          position: 'relative',
-          overflow: 'auto',
-        }}
+        className="hero-frame relative flex min-h-0 flex-col items-center overflow-y-auto overflow-x-hidden rounded-[20px] border border-white/[0.07]"
+        style={{ gridColumn: 2, gridRow: 2 }}
       >
-        <style>{`@keyframes ambientPulse { 0%,100%{opacity:0.6} 50%{opacity:1} }`}</style>
+        <div className="hero-blob hero-blob-a" />
         <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%,-50%)',
-            width: 500,
-            height: 500,
-            background: 'radial-gradient(ellipse, rgba(100,100,100,0.04) 0%, transparent 70%)',
-            pointerEvents: 'none',
-            animation: 'ambientPulse 6s ease-in-out infinite',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `radial-gradient(circle, ${C.surface2} 1px, transparent 1px)`,
-            backgroundSize: '28px 28px',
-            opacity: 0.25,
-            pointerEvents: 'none',
-          }}
-        />
-        <div style={{ width: '100%', maxWidth: 640, position: 'relative', zIndex: 1, margin: 'auto' }}>
+          className="pointer-events-none absolute left-1/2 top-[60%] aspect-square w-[min(96%,680px)] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-700"
+          style={{ opacity: idle ? 0.34 : 0.14 }}
+          aria-hidden="true"
+        >
+          <OrbCanvas />
+        </div>
+
+        <div className="relative z-[1] m-auto w-full max-w-[660px] px-6 py-10">
+          {idle && (
+            <div className="app-rise mb-8 text-center">
+              <h1 className="text-[clamp(2.2rem,3.6vw,3.4rem)] font-light leading-[1] tracking-[-0.045em] text-[color:var(--ink)]">
+                Say what you <span className="f-serif fade-word pr-1 italic">need.</span>
+              </h1>
+              <p className="mx-auto mt-4 max-w-sm text-[0.92rem] leading-relaxed text-[color:var(--ink-3)]">
+                Swipass compares every provider and hands you one transaction to sign.
+              </p>
+            </div>
+          )}
           <CommandCard ctx={ctx} onOpenNetwork={() => setNetOpen(true)} />
         </div>
 
         {netOpen && (
           <>
-            <div style={{ position: 'fixed', inset: 0, zIndex: 210 }} onClick={() => setNetOpen(false)} />
-            <div
-              style={{
-                position: 'absolute',
-                top: '1.5rem',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 211,
-                background: C.panel,
-                border: `1px solid ${C.border}`,
-                borderRadius: 8,
-                minWidth: 200,
-                overflow: 'hidden',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-              }}
-            >
-              <div style={{ padding: '0.55rem 1rem', ...uppercaseLabel, ...borderBottom }}>Source network</div>
+            <div className="fixed inset-0 z-[210]" onClick={() => setNetOpen(false)} />
+            <div className="glass app-rise absolute left-1/2 top-6 z-[211] min-w-[240px] -translate-x-1/2 overflow-hidden p-1.5">
+              <div className="kicker px-3 pb-2 pt-2">Source network</div>
               {displayChains.map((chain, idx) => (
                 <button
                   key={chain}
+                  type="button"
                   onClick={() => {
                     handleNetworkSwitch(idx)
                     setNetOpen(false)
                   }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.6rem',
-                    padding: '0.6rem 1rem',
-                    fontSize: '0.72rem',
-                    color: fromChainIdx === idx ? C.max : C.body,
-                    background: fromChainIdx === idx ? C.surface : 'none',
-                    width: '100%',
-                    border: 'none',
-                    borderBottom: `1px solid ${C.border}`,
-                    cursor: 'pointer',
-                    fontFamily: "'DM Mono',monospace",
-                    textAlign: 'left',
-                  }}
+                  className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[0.86rem] transition-colors ${
+                    fromChainIdx === idx
+                      ? 'bg-white/[0.08] text-[color:var(--ink)]'
+                      : 'text-[color:var(--ink-3)] hover:bg-white/[0.04] hover:text-[color:var(--ink)]'
+                  }`}
                 >
                   <PulseDot connected={fromChainIdx === idx} />
                   {chain}
@@ -191,71 +137,43 @@ export function AppLayoutDesktop({ ctx }: AppLayoutDesktopProps) {
         )}
       </main>
 
-      <aside
-        style={{
-          gridColumn: 3,
-          gridRow: 2,
-          borderLeft: `1px solid ${C.border}`,
-          background: C.panel,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ flexShrink: 0, ...borderBottom }}>
-          <div
-            style={{
-              padding: '0.85rem 1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <span style={{ ...uppercaseLabel, fontSize: '0.62rem', letterSpacing: '0.14em' }}>Wallet</span>
-          </div>
-          <div style={{ padding: '0 1.25rem 1.25rem' }}>
-            <WalletPanelContent
-              isConnected={isConnected}
-              address={address}
-              balance={balance}
-              chainName={chainName}
-              connect={connect}
-              disconnect={disconnect}
-            />
-          </div>
+      <aside className="app-panel flex min-h-0 flex-col overflow-hidden" style={{ gridColumn: 3, gridRow: 2 }}>
+        <PanelHeading title="Wallet" />
+        <div className="shrink-0 border-b border-white/[0.06] px-5 py-5">
+          <WalletPanelContent
+            isConnected={isConnected}
+            address={address}
+            balance={balance}
+            chainName={chainName}
+            connect={connect}
+            disconnect={disconnect}
+          />
         </div>
-
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: '0.85rem 1.25rem', ...borderBottom, flexShrink: 0 }}>
-            <span style={{ ...uppercaseLabel, fontSize: '0.62rem', letterSpacing: '0.14em' }}>
-              Transaction Preview
-            </span>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1.25rem' }}>
-            <TxPreviewContent
+        <PanelHeading title="Transaction preview" />
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          <TxPreviewContent
+            result={result}
+            displayChains={displayChains}
+            feeInfo={ctx.feeInfo}
+            tokens={ctx.tokens}
+            tokenTotal={ctx.tokenTotal}
+            tokenQuery={ctx.tokenQuery}
+            onTokenQuery={ctx.setTokenQuery}
+            approval={approval}
+          />
+        </div>
+        {result && (
+          <div className="shrink-0 px-5 pb-5">
+            <ConfirmButton
               result={result}
-              displayChains={displayChains}
-              feeInfo={ctx.feeInfo}
-              tokens={ctx.tokens}
-              tokenTotal={ctx.tokenTotal}
-              tokenQuery={ctx.tokenQuery}
-              onTokenQuery={ctx.setTokenQuery}
               approval={approval}
+              isConfirming={isConfirming}
+              isSending={isSending}
+              isWaiting={isWaiting}
+              onConfirm={handleConfirm}
             />
           </div>
-          {result && (
-            <div style={{ padding: '0 1.25rem 1.25rem', flexShrink: 0 }}>
-              <ConfirmButton
-                result={result}
-                approval={approval}
-                isConfirming={isConfirming}
-                isSending={isSending}
-                isWaiting={isWaiting}
-                onConfirm={handleConfirm}
-              />
-            </div>
-          )}
-        </div>
+        )}
       </aside>
     </div>
   )

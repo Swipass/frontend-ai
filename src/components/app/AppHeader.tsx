@@ -2,14 +2,21 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { IntentExecution } from './useIntentExecution'
-import { C, displayFont, Icon, PulseDot } from './shared'
+import { Icon, PulseDot } from './shared'
 import { Wordmark } from '../Logo'
 
 interface AppHeaderProps {
   ctx: IntentExecution
 }
 
-// Desktop command-center header: brand, nav, network picker, wallet, dashboard.
+const NAV: [string, string][] = [
+  ['App', '/app'],
+  ['Docs', '/docs'],
+  ['Dashboard', '/dashboard'],
+]
+
+// Desktop command-center header: brand, a pill of destinations, the network
+// picker, the wallet, and a shortcut to the developer dashboard.
 export function AppHeader({ ctx }: AppHeaderProps) {
   const {
     isConnected,
@@ -25,56 +32,22 @@ export function AppHeader({ ctx }: AppHeaderProps) {
   const [networkOpen, setNetworkOpen] = useState(false)
 
   return (
-    <header
-      style={{
-        gridColumn: '1/-1',
-        gridRow: 1,
-        background: C.panel,
-        borderBottom: `1px solid ${C.border}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 1.25rem',
-        zIndex: 100,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-        <Link
-          to="/"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            ...displayFont,
-            fontSize: '1rem',
-            fontWeight: 800,
-            color: C.max,
-            letterSpacing: '-0.03em',
-            textDecoration: 'none',
-          }}
-        >
-          <Wordmark textClassName="text-base" />
+    <header style={{ gridColumn: '1/-1', gridRow: 1 }} className="relative z-[100] flex items-center justify-between px-2">
+      <div className="flex items-center gap-6">
+        <Link to="/" className="text-[color:var(--ink)]" aria-label="Swipass home">
+          <Wordmark textClassName="text-[1.3rem]" />
         </Link>
-        <nav style={{ display: 'flex', gap: 0, borderLeft: `1px solid ${C.border}`, paddingLeft: '1.5rem' }}>
-          {[
-            ['App', '/app'],
-            ['Dashboard', '/dashboard'],
-            ['Docs', '/docs'],
-          ].map(([label, href]) => (
+        <nav aria-label="App" className="flex items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] p-1 backdrop-blur-xl">
+          {NAV.map(([label, href]) => (
             <Link
               key={label}
               to={href}
-              style={{
-                fontSize: '0.7rem',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: href === '/app' ? C.max : C.muted,
-                padding: '0.3rem 0.75rem',
-                borderRadius: 3,
-                background: href === '/app' ? C.surface2 : 'transparent',
-                transition: 'all 0.3s',
-                textDecoration: 'none',
-              }}
+              aria-current={href === '/app' ? 'page' : undefined}
+              className={`rounded-full px-3.5 py-1.5 text-[0.82rem] transition-colors duration-300 ${
+                href === '/app'
+                  ? 'bg-white/[0.1] text-[color:var(--ink)]'
+                  : 'text-[color:var(--ink-3)] hover:bg-white/[0.05] hover:text-[color:var(--ink)]'
+              }`}
             >
               {label}
             </Link>
@@ -82,72 +55,41 @@ export function AppHeader({ ctx }: AppHeaderProps) {
         </nav>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <div style={{ position: 'relative' }}>
+      <div className="flex items-center gap-2">
+        <div className="relative">
           <button
+            type="button"
             onClick={e => {
               e.stopPropagation()
               setNetworkOpen(o => !o)
             }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              padding: '0.3rem 0.75rem',
-              border: `1px solid ${C.border}`,
-              borderRadius: 40,
-              fontSize: '0.7rem',
-              color: C.body,
-              background: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              fontFamily: "'DM Mono',monospace",
-            }}
+            className="chip h-10 px-4 text-[0.82rem] transition-colors hover:border-white/20"
           >
             <PulseDot connected={isConnected} />
-            {isConnected ? chainName : 'Select Network'}
+            {isConnected ? chainName : 'Select network'}
             <Icon.ChevronDown size={10} />
           </button>
           {networkOpen && !chainsLoading && (
             <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 190 }} onClick={() => setNetworkOpen(false)} />
+              <div className="fixed inset-0 z-[190]" onClick={() => setNetworkOpen(false)} />
               <div
                 onClick={e => e.stopPropagation()}
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  right: 0,
-                  background: C.panel,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 8,
-                  minWidth: 180,
-                  zIndex: 200,
-                  overflow: 'hidden',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                }}
+                className="glass app-rise absolute right-0 top-[calc(100%+8px)] z-[200] min-w-[230px] overflow-hidden p-1.5"
               >
+                <div className="kicker px-3 pb-2 pt-2">Network</div>
                 {displayChains.map((chain, idx) => (
                   <button
                     key={chain}
+                    type="button"
                     onClick={() => {
                       handleNetworkSwitch(idx)
                       setNetworkOpen(false)
                     }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.6rem',
-                      padding: '0.65rem 1rem',
-                      fontSize: '0.72rem',
-                      color: fromChainIdx === idx ? C.max : C.body,
-                      background: fromChainIdx === idx ? C.surface : 'none',
-                      width: '100%',
-                      border: 'none',
-                      borderBottom: `1px solid ${C.border}`,
-                      cursor: 'pointer',
-                      fontFamily: "'DM Mono',monospace",
-                      transition: 'background 0.2s',
-                    }}
+                    className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[0.86rem] transition-colors ${
+                      fromChainIdx === idx
+                        ? 'bg-white/[0.08] text-[color:var(--ink)]'
+                        : 'text-[color:var(--ink-3)] hover:bg-white/[0.04] hover:text-[color:var(--ink)]'
+                    }`}
                   >
                     <PulseDot connected={fromChainIdx === idx} />
                     {chain}
@@ -157,46 +99,30 @@ export function AppHeader({ ctx }: AppHeaderProps) {
             </>
           )}
         </div>
+
         <button
+          type="button"
           onClick={isConnected ? disconnect : connect}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.4rem 1rem',
-            background: isConnected ? C.surface : C.max,
-            color: isConnected ? C.label : C.bg,
-            border: isConnected ? `1px solid ${C.border}` : 'none',
-            borderRadius: 4,
-            fontFamily: "'DM Mono',monospace",
-            fontSize: '0.7rem',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            transition: 'all 0.3s',
-          }}
+          title={isConnected ? 'Disconnect wallet' : undefined}
+          className={`pill h-10 ${isConnected ? 'pill-dark f-mono text-[0.8rem]' : 'pill-light'}`}
         >
-          {isConnected ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : 'Connect Wallet'}
+          {isConnected ? (
+            <>
+              <PulseDot connected />
+              {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+            </>
+          ) : (
+            'Connect wallet'
+          )}
         </button>
+
         <Link
           to="/dashboard"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            fontSize: '0.7rem',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: C.muted,
-            padding: '0.4rem 0.75rem',
-            border: `1px solid ${C.border}`,
-            borderRadius: 4,
-            transition: 'all 0.3s',
-            textDecoration: 'none',
-          }}
+          aria-label="Developer dashboard"
+          title="Developer dashboard"
+          className="grid h-10 w-10 place-items-center rounded-full border border-white/[0.1] bg-white/[0.04] text-[color:var(--ink-2)] transition-colors hover:bg-white/[0.08] hover:text-[color:var(--ink)]"
         >
-          <Icon.Grid size={11} />
-          Dashboard
+          <Icon.Grid size={14} />
         </Link>
       </div>
     </header>

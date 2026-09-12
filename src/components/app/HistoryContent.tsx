@@ -61,7 +61,7 @@ export function HistoryContent({ commandHistory, isConnected = false }: HistoryC
                 style={{
                   padding: '0.1rem 0.4rem',
                   background: C.surface2,
-                  borderRadius: 3,
+                  borderRadius: 999,
                   fontSize: '0.62rem',
                   color: C.body,
                 }}
@@ -76,7 +76,7 @@ export function HistoryContent({ commandHistory, isConnected = false }: HistoryC
                   style={{
                     padding: '0.1rem 0.4rem',
                     background: C.surface2,
-                    borderRadius: 3,
+                    borderRadius: 999,
                     fontSize: '0.62rem',
                     color: C.body,
                   }}

@@ -1,6 +1,5 @@
 // src/components/app/WalletPanelContent.tsx
-import React from 'react'
-import { C, displayFont, Icon, PulseDot } from './shared'
+import { Icon, PulseDot } from './shared'
 
 interface WalletPanelContentProps {
   isConnected: boolean
@@ -21,42 +20,17 @@ export function WalletPanelContent({
 }: WalletPanelContentProps) {
   if (!isConnected) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <p style={{ fontSize: '0.82rem', color: C.muted, lineHeight: 1.65, margin: 0 }}>
-          Connect your wallet to start executing cross-chain transactions. No account
-          required.
+      <div className="flex flex-col gap-3">
+        <p className="m-0 text-[0.88rem] leading-relaxed text-[color:var(--ink-3)]">
+          Connect a wallet to start executing cross-chain transactions. No account required.
         </p>
-        <button
-          onClick={connect}
-          style={{
-            width: '100%',
-            padding: '0.85rem',
-            background: C.max,
-            color: C.bg,
-            border: 'none',
-            borderRadius: 6,
-            fontFamily: "'DM Mono',monospace",
-            fontSize: '0.75rem',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-          }}
-        >
-          Connect Wallet
+        <button type="button" onClick={connect} className="pill pill-light h-12 w-full">
+          Connect wallet
         </button>
-        <div
-          style={{
-            display: 'flex',
-            gap: '0.5rem',
-            padding: '0.65rem 0.75rem',
-            border: `1px solid ${C.border}`,
-            borderRadius: 5,
-            fontSize: '0.72rem',
-            color: C.muted,
-            lineHeight: 1.5,
-          }}
-        >
-          <Icon.Shield size={13} />
+        <div className="flex items-center gap-2.5 rounded-2xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-3 text-[0.78rem] leading-relaxed text-[color:var(--ink-3)]">
+          <span className="shrink-0">
+            <Icon.Shield size={14} />
+          </span>
           Non-custodial. Your keys stay in your wallet.
         </div>
       </div>
@@ -64,74 +38,37 @@ export function WalletPanelContent({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
         <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            background: C.surface2,
-            border: `1px solid ${C.mid}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '0.7rem',
-            color: C.muted,
-          }}
-        >
-          ◈
-        </div>
-        <div>
-          <div style={{ fontSize: '0.78rem', color: C.label }}>
+          className="h-10 w-10 shrink-0 rounded-full border border-white/20 bg-[radial-gradient(circle_at_30%_30%,#f5f5f5,#6b6b6b_55%,#1a1a1a)]"
+          aria-hidden="true"
+        />
+        <div className="min-w-0">
+          <div className="f-mono text-[0.84rem] text-[color:var(--ink)]">
             {address?.slice(0, 6)}...{address?.slice(-4)}
           </div>
-          <div style={{ fontSize: '0.65rem', color: C.muted }}>
-            Connected • {chainName}
-          </div>
+          <div className="text-[0.74rem] text-[color:var(--ink-4)]">Connected · {chainName}</div>
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-        <span
-          style={{
-            ...displayFont,
-            fontSize: '1.6rem',
-            fontWeight: 700,
-            color: C.max,
-            letterSpacing: '-0.03em',
-          }}
-        >
-          {parseFloat(balance || '0').toFixed(4)}
-        </span>
-        <span style={{ fontSize: '0.75rem', color: C.muted }}>{chainName}</span>
+      <div>
+        <div className="kicker mb-1.5">Balance</div>
+        <div className="flex items-baseline gap-2">
+          <span className="text-[2.2rem] font-light leading-none tracking-[-0.045em] text-[color:var(--ink)]">
+            {parseFloat(balance || '0').toFixed(4)}
+          </span>
+          <span className="text-[0.8rem] text-[color:var(--ink-3)]">{chainName}</span>
+        </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            padding: '0.25rem 0.65rem',
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            borderRadius: 20,
-            fontSize: '0.65rem',
-            color: C.body,
-          }}
-        >
+      <div className="flex items-center gap-2">
+        <span className="chip text-[0.74rem]">
           <PulseDot connected size={6} />
           {chainName}
-        </div>
+        </span>
         <button
+          type="button"
           onClick={disconnect}
-          style={{
-            marginLeft: 'auto',
-            fontSize: '0.62rem',
-            color: C.muted,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-          }}
+          className="ml-auto text-[0.76rem] text-[color:var(--ink-4)] transition-colors hover:text-[color:var(--ink)]"
         >
           Disconnect
         </button>

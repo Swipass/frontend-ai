@@ -1,7 +1,6 @@
 // src/components/app/ConfirmButton.tsx
-import React from 'react'
 import { ApprovalPayload, IntentResponse } from '../../services/intentService'
-import { C, Icon, Spinner } from './shared'
+import { Icon, Spinner } from './shared'
 
 interface ConfirmButtonProps {
   result: IntentResponse | null
@@ -38,47 +37,27 @@ export function ConfirmButton({
     ? 'Processing...'
     : approvalLabel
     ? `1 of 2: ${approvalLabel}`
-    : '✓ Confirm & Sign'
+    : 'Confirm and sign'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', paddingTop: '0.75rem' }}>
+    <div className="flex flex-col gap-2.5 pt-3">
       <button
+        type="button"
         onClick={onConfirm}
         disabled={isConfirming}
-        style={{
-          width: '100%',
-          padding: '0.9rem',
-          background: isConfirming ? C.mid : C.max,
-          color: isConfirming ? C.muted : C.bg,
-          border: 'none',
-          borderRadius: 8,
-          fontFamily: "'DM Mono',monospace",
-          fontSize: '0.78rem',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          cursor: isConfirming ? 'not-allowed' : 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.5rem',
-          transition: 'background 0.3s',
-        }}
+        className={`pill h-[3.25rem] w-full text-[0.95rem] ${
+          isConfirming
+            ? 'cursor-not-allowed border-white/[0.08] bg-white/[0.08] text-[color:var(--ink-3)]'
+            : 'pill-light shadow-[0_0_44px_-10px_rgba(255,255,255,0.5)]'
+        }`}
       >
-        {isConfirming && <Spinner size={14} light />}
+        {isConfirming ? <Spinner size={14} light /> : !approvalLabel && <Icon.Check size={16} />}
         {label}
       </button>
-      <p
-        style={{
-          textAlign: 'center',
-          fontSize: '0.65rem',
-          color: C.muted,
-          lineHeight: 1.5,
-          margin: 0,
-        }}
-      >
+      <p className="m-0 text-center text-[0.74rem] leading-relaxed text-[color:var(--ink-4)]">
         {approvalLabel
           ? `${approval?.token_symbol} must be approved before this route can run. Two signatures: the approval, then the transaction.`
-          : 'Review in your wallet. Transaction broadcast after signature.'}
+          : 'Review it in your wallet. The transaction is broadcast after you sign.'}
       </p>
     </div>
   )

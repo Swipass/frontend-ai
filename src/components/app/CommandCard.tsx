@@ -1,7 +1,7 @@
 // src/components/app/CommandCard.tsx
 import { IntentExecution } from './useIntentExecution'
 import { CommandResults } from './CommandResults'
-import { C, Spinner, Icon, PulseDot } from './shared'
+import { Spinner, Icon, PulseDot } from './shared'
 
 interface CommandCardProps {
   ctx: IntentExecution
@@ -32,200 +32,101 @@ export function CommandCard({ ctx, onOpenNetwork }: CommandCardProps) {
   } = ctx
 
   const submitDisabled = !command.trim() || loading || chainsLoading
+  const state = loading ? 'loading' : result ? 'result' : 'idle'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.6rem',
-          opacity: isConnected ? 1 : 0.7,
-          transition: 'opacity 0.4s',
-        }}
-      >
-        <PulseDot connected={isConnected} />
-        <span
-          style={{
-            fontSize: '0.7rem',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: C.muted,
-            textAlign: 'center',
-          }}
-        >
-          {isConnected ? `Connected (${balance} ${chainName}) - Ready` : 'Connect wallet to begin'}
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-center">
+        <span className={`chip text-[0.78rem] transition-opacity duration-500 ${isConnected ? '' : 'opacity-80'}`}>
+          <PulseDot connected={isConnected} />
+          {isConnected ? `Connected · ${balance} on ${chainName}` : 'Connect a wallet to begin'}
         </span>
       </div>
 
-      <div
-        style={{
-          background: C.panel,
-          border: `1px solid ${loading ? C.muted : result ? C.body : C.border}`,
-          borderRadius: 12,
-          overflow: 'hidden',
-          transition: 'border-color 0.3s, box-shadow 0.3s',
-          boxShadow: result ? `0 0 0 3px rgba(102,102,102,0.08)` : 'none',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '1rem 1rem 0' }}>
+      <div className="app-command" data-state={state}>
+        <div className="flex items-start gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
           <button
+            type="button"
             onClick={toggleRecording}
             aria-label={isRecording ? 'Stop recording' : 'Start voice input'}
-            style={{
-              width: 40,
-              height: 40,
-              border: `1px solid ${isRecording ? C.body : C.border}`,
-              borderRadius: 8,
-              background: isRecording ? C.mid : C.surface,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              flexShrink: 0,
-              color: isRecording ? C.max : C.muted,
-              transition: 'all 0.3s',
-            }}
+            className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border transition-all duration-300 ${
+              isRecording
+                ? 'app-mic-live border-transparent bg-[color:var(--ink)] text-[#0a0a0a]'
+                : 'border-white/[0.12] bg-white/[0.04] text-[color:var(--ink-2)] hover:bg-white/[0.08] hover:text-[color:var(--ink)]'
+            }`}
           >
-            <Icon.Mic size={16} />
+            <Icon.Mic size={17} />
           </button>
-          <div style={{ flex: 1, padding: '0 0.75rem', minWidth: 0 }}>
-            <textarea
-              ref={textareaRef}
-              value={command}
-              onChange={e => setCommand(e.target.value)}
-              placeholder={
-                isMobile ? 'Speak or type a command...' : 'Send 50 USDC from Arbitrum to Base...'
+          <textarea
+            ref={textareaRef}
+            value={command}
+            onChange={e => setCommand(e.target.value)}
+            placeholder={isMobile ? 'Speak or type a command...' : 'Send 50 USDC from Arbitrum to Base...'}
+            rows={3}
+            className="min-h-[5.25rem] w-full min-w-0 flex-1 resize-none bg-transparent pt-2 font-light leading-[1.5] tracking-[-0.01em] text-[color:var(--ink)] outline-none"
+            style={{ fontSize: isMobile ? '1.05rem' : '1.2rem', caretColor: 'var(--ink)' }}
+            onKeyDown={e => {
+              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault()
+                handleSubmit()
               }
-              rows={3}
-              style={{
-                width: '100%',
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
-                fontFamily: "'DM Mono',monospace",
-                fontSize: isMobile ? '1rem' : '0.9rem',
-                color: C.hi,
-                lineHeight: 1.6,
-                minHeight: 72,
-                caretColor: C.label,
-              }}
-              onKeyDown={e => {
-                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                  e.preventDefault()
-                  handleSubmit()
-                }
-              }}
-            />
-          </div>
+            }}
+          />
         </div>
 
-        <div style={{ padding: '0 1rem 0.5rem', paddingLeft: 'calc(1rem + 40px + 0.75rem)' }}>
+        <div className="px-4 pb-3 pl-[calc(1rem+44px+0.75rem)] sm:px-5 sm:pl-[calc(1.25rem+44px+0.75rem)]">
           <button
+            type="button"
             onClick={() => setShowDestInput(!showDestInput)}
-            style={{
-              fontSize: '0.62rem',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: C.mid,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: "'DM Mono',monospace",
-              padding: 0,
-            }}
+            className="text-[0.78rem] text-[color:var(--ink-4)] transition-colors hover:text-[color:var(--ink-2)]"
           >
-            {showDestInput ? '- Hide' : '+ Custom destination address'}
+            {showDestInput ? 'Hide destination' : '+ Send to a different address'}
           </button>
           {showDestInput && (
             <input
               value={destAddress}
               onChange={e => setDestAddress(e.target.value)}
               placeholder="0x... destination address (optional)"
-              style={{
-                display: 'block',
-                width: '100%',
-                marginTop: '0.5rem',
-                background: C.surface,
-                border: `1px solid ${C.border}`,
-                borderRadius: 5,
-                padding: '0.45rem 0.75rem',
-                fontFamily: "'DM Mono',monospace",
-                fontSize: '0.75rem',
-                color: C.body,
-                outline: 'none',
-              }}
+              className="f-mono app-rise mt-2 block w-full rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-2.5 text-[0.8rem] text-[color:var(--ink-2)] outline-none transition-colors focus:border-white/25"
             />
           )}
         </div>
 
-        <div
-          style={{
-            padding: '0.75rem 1rem',
-            borderTop: `1px solid ${C.border}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '0.5rem',
-            flexWrap: 'wrap',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] px-3 py-3 sm:px-4">
+          <div className="flex min-w-0 items-center gap-3">
             <button
+              type="button"
               onClick={onOpenNetwork}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.3rem 0.65rem',
-                background: C.surface,
-                border: `1px solid ${C.border}`,
-                borderRadius: 20,
-                fontSize: '0.68rem',
-                color: C.body,
-                cursor: 'pointer',
-                transition: 'all 0.3s',
-                fontFamily: "'DM Mono',monospace",
-                whiteSpace: 'nowrap',
-              }}
+              className="chip whitespace-nowrap text-[0.8rem] transition-colors hover:border-white/20"
             >
-              <Icon.Swap size={10} />
-              {isMobile
-                ? displayChains[fromChainIdx] || 'Chain'
-                : `From: ${displayChains[fromChainIdx] || 'Loading...'}`}
+              <Icon.Swap size={12} />
+              {isMobile ? displayChains[fromChainIdx] || 'Chain' : `From ${displayChains[fromChainIdx] || 'loading...'}`}
+              <Icon.ChevronDown size={9} />
             </button>
-            {!isMobile && <span style={{ fontSize: '0.62rem', color: C.mid }}>Cmd + Enter to send</span>}
+            {!isMobile && (
+              <span className="hidden items-center gap-1 text-[0.72rem] text-[color:var(--ink-4)] xl:flex">
+                <kbd className="app-kbd">Cmd</kbd>
+                <kbd className="app-kbd">Enter</kbd>
+                to send
+              </span>
+            )}
           </div>
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={submitDisabled}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: isMobile ? '0.55rem 1.1rem' : '0.5rem 1.25rem',
-              background: submitDisabled ? C.mid : C.max,
-              color: submitDisabled ? C.muted : C.bg,
-              border: 'none',
-              borderRadius: 6,
-              fontFamily: "'DM Mono',monospace",
-              fontSize: '0.72rem',
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.3s',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
+            className={`pill h-10 shrink-0 px-5 ${
+              submitDisabled ? 'cursor-not-allowed border-white/[0.06] bg-white/[0.06] text-[color:var(--ink-4)]' : 'pill-light'
+            }`}
           >
             {loading ? (
               <>
-                <Spinner size={13} light /> Processing
+                <Spinner size={13} light /> Routing
               </>
             ) : (
-              'Execute'
+              <>
+                Execute <Icon.ArrowUpRight size={13} />
+              </>
             )}
           </button>
         </div>

@@ -1,11 +1,11 @@
 // src/components/app/CommandResults.tsx
 // Everything the command card shows below the input box: loading state, the
-// provider quote table, the mobile confirm button, quick commands, and the
+// provider quote list, the mobile confirm button, quick commands, and the
 // long-pending warning.
 import { IntentExecution } from './useIntentExecution'
 import { ProviderTable } from './ProviderTable'
 import { ConfirmButton } from './ConfirmButton'
-import { C, uppercaseLabel, Icon } from './shared'
+import { Icon } from './shared'
 
 export function CommandResults({ ctx }: { ctx: IntentExecution }) {
   const {
@@ -19,6 +19,7 @@ export function CommandResults({ ctx }: { ctx: IntentExecution }) {
     isSending,
     isWaiting,
     handleConfirm,
+    approval,
     pendingWarning,
     txHash,
     isMobile,
@@ -28,56 +29,32 @@ export function CommandResults({ ctx }: { ctx: IntentExecution }) {
   return (
     <>
       {loading && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '1rem',
-            padding: '2rem',
-            textAlign: 'center',
-          }}
-        >
-          <div style={{ position: 'relative', width: 48, height: 48 }}>
-            <div
-              style={{
-                width: '100%',
-                height: '100%',
-                border: `1px solid ${C.muted}`,
-                borderTopColor: C.hi,
-                borderRadius: '50%',
-              }}
-              className="spinner"
-            />
-            <div
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%,-50%)',
-                width: 6,
-                height: 6,
-                background: C.body,
-                borderRadius: '50%',
-              }}
-            />
+        <div className="app-rise flex flex-col items-center gap-3 py-8 text-center">
+          <div className="relative mb-1 h-14 w-14" aria-hidden="true">
+            <div className="app-ring absolute inset-0 rounded-full border border-white/10 border-t-white/80" />
+            <div className="app-ring-rev absolute inset-2 rounded-full border border-white/10 border-b-white/60" />
+            <div className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--ink)] shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
           </div>
-          <div style={{ fontSize: '0.78rem', color: C.muted }}>Processing your command...</div>
+          <div className="text-[0.92rem] text-[color:var(--ink-2)]">Reading your command</div>
+          <div className="f-mono text-[0.7rem] text-[color:var(--ink-4)]">Asking every provider for a quote at once</div>
         </div>
       )}
 
       {result && !loading && (
-        <ProviderTable
-          result={result}
-          selectedProvider={selectedProvider}
-          onSelectProvider={handleSelectProvider}
-          ratings={ratings}
-        />
+        <div className="app-rise">
+          <ProviderTable
+            result={result}
+            selectedProvider={selectedProvider}
+            onSelectProvider={handleSelectProvider}
+            ratings={ratings}
+          />
+        </div>
       )}
 
       {result && !loading && isMobile && (
         <ConfirmButton
           result={result}
+          approval={approval}
           isConfirming={isConfirming}
           isSending={isSending}
           isWaiting={isWaiting}
@@ -85,29 +62,21 @@ export function CommandResults({ ctx }: { ctx: IntentExecution }) {
         />
       )}
 
-      {!loading && !result && (
-        <div>
-          <div style={{ ...uppercaseLabel, marginBottom: '0.6rem', display: 'block' }}>Quick Commands</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+      {!loading && !result && quickCommands.length > 0 && (
+        <div className="app-rise">
+          <div className="kicker mb-3 text-center">Try one of these</div>
+          <div className="flex flex-wrap justify-center gap-2">
             {quickCommands.map((c, i) => (
               <button
                 key={i}
+                type="button"
                 onClick={() => setCommand(c)}
-                style={{
-                  padding: '0.4rem 0.8rem',
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 40,
-                  fontSize: '0.72rem',
-                  color: C.muted,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  fontFamily: "'DM Mono',monospace",
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = C.surface2)}
-                onMouseLeave={e => (e.currentTarget.style.background = C.surface)}
+                className="chip group text-left text-[0.8rem] text-[color:var(--ink-3)] transition-all duration-300 hover:border-white/20 hover:bg-white/[0.08] hover:text-[color:var(--ink)]"
               >
                 {c}
+                <span className="-ml-1 opacity-0 transition-all duration-300 group-hover:ml-0 group-hover:opacity-100">
+                  <Icon.ArrowUpRight size={11} />
+                </span>
               </button>
             ))}
           </div>
@@ -115,24 +84,13 @@ export function CommandResults({ ctx }: { ctx: IntentExecution }) {
       )}
 
       {pendingWarning && txHash && (
-        <div
-          style={{
-            padding: '0.6rem 0.75rem',
-            background: C.surface2,
-            border: `1px solid ${C.mid}`,
-            borderRadius: 5,
-            fontSize: '0.68rem',
-            color: C.label,
-            lineHeight: 1.5,
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '0.4rem',
-          }}
-        >
-          <Icon.Warning size={12} />
+        <div className="app-rise flex items-start gap-2.5 rounded-2xl border border-white/[0.14] bg-white/[0.05] px-4 py-3 text-[0.8rem] leading-relaxed text-[color:var(--ink-2)]">
+          <span className="mt-0.5 shrink-0">
+            <Icon.Warning size={14} />
+          </span>
           <span>
-            Transaction is taking longer than usual. It may be stuck due to network congestion or low
-            gas. You can speed up or cancel in your wallet.
+            Transaction is taking longer than usual. It may be stuck due to network congestion or low gas. You can
+            speed up or cancel in your wallet.
           </span>
         </div>
       )}

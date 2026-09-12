@@ -1,13 +1,24 @@
 // src/components/app/shared.tsx
 import React from 'react'
 
-// ─── CSS tokens ───────────────────────────────────────────────
+// ─── Type ─────────────────────────────────────────────────────
+// The app speaks the public site's type: Geist for interface text, Geist Mono
+// for labels, addresses and figures, Instrument Serif for the odd accent.
+export const F = {
+  ui: "'Geist', system-ui, sans-serif",
+  mono: "'Geist Mono', ui-monospace, monospace",
+  serif: "'Instrument Serif', Georgia, serif",
+} as const
+
+// ─── Colour tokens ────────────────────────────────────────────
+// Grayscale only. Surfaces and borders are translucent so panels read as glass
+// over the stage rather than flat boxes.
 export const C = {
   bg:       'var(--gray-50)',
-  panel:    'var(--gray-100)',
-  surface:  'var(--gray-200)',
-  surface2: 'var(--gray-300)',
-  border:   'var(--gray-300)',
+  panel:    '#0d0d0d',
+  surface:  'rgba(255,255,255,0.045)',
+  surface2: 'rgba(255,255,255,0.08)',
+  border:   'rgba(255,255,255,0.08)',
   mid:      'var(--gray-400)',
   muted:    'var(--gray-500)',
   body:     'var(--gray-600)',
@@ -19,14 +30,14 @@ export const C = {
 
 // ─── Style shortcuts ──────────────────────────────────────────
 export const monoSm: React.CSSProperties = {
-  fontFamily: "'DM Mono',monospace",
+  fontFamily: F.mono,
   fontSize: '0.72rem',
-  letterSpacing: '0.06em',
+  letterSpacing: '0.04em',
 }
-export const displayFont: React.CSSProperties = { fontFamily: "'Syne',sans-serif" }
+export const displayFont: React.CSSProperties = { fontFamily: F.ui }
 export const uppercaseLabel: React.CSSProperties = {
   ...monoSm,
-  letterSpacing: '0.12em',
+  letterSpacing: '0.16em',
   textTransform: 'uppercase',
   color: C.muted,
   fontSize: '0.6rem',
@@ -57,9 +68,11 @@ export function PulseDot({ connected = false, size = 6 }: { connected?: boolean;
         width: size,
         height: size,
         borderRadius: '50%',
-        background: connected ? C.body : C.muted,
+        background: connected ? C.max : C.muted,
         flexShrink: 0,
-        ...(connected ? { animation: 'pulseDot 2s ease-in-out infinite' } : {}),
+        ...(connected
+          ? { animation: 'pulseDot 2s ease-in-out infinite', boxShadow: '0 0 8px rgba(255,255,255,0.7)' }
+          : {}),
       }}
     />
   )
@@ -131,6 +144,11 @@ export const Icon = {
   Wallet: ({ size = 16 }: { size?: number }) => (
     <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" />
+    </svg>
+  ),
+  ArrowUpRight: ({ size = 14 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M5 11 11 5M6 5h5v5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
 }

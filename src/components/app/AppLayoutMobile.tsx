@@ -10,14 +10,15 @@ import { ConfirmButton } from './ConfirmButton'
 import { BottomSheet } from './BottomSheet'
 import { Wordmark } from '../Logo'
 import { StatsRow } from './StatsRow'
-import { C, displayFont, Icon, PulseDot } from './shared'
+import { Icon, PulseDot } from './shared'
 
 interface AppLayoutMobileProps {
   ctx: IntentExecution
 }
 
-// Single-column layout for phones and small tablets (< 900px): bottom tab bar
-// (Command / Preview / History) plus bottom-sheet drawers for Wallet + Network.
+// Single-column layout for phones and small tablets (< 900px): a framed stage,
+// a floating tab bar (Command / Preview / History) and bottom-sheet drawers
+// for the wallet and the network.
 export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
   const {
     isConnected,
@@ -30,6 +31,7 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
     fromChainIdx,
     handleNetworkSwitch,
     result,
+    loading,
     commandHistory,
     totalVolume,
     mobileTab,
@@ -45,6 +47,7 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
   const [sheetNetwork, setSheetNetwork] = useState(false)
 
   const settledCount = commandHistory.filter(c => c.status === 'completed').length
+  const idle = !result && !loading
 
   const tabs = [
     { id: 'command' as const, label: 'Command', Icon: Icon.Command, badge: null as string | number | null },
@@ -58,82 +61,24 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
   ]
 
   return (
-    <div
-      style={{
-        height: '100dvh',
-        display: 'flex',
-        flexDirection: 'column',
-        background: C.bg,
-        overflow: 'hidden',
-      }}
-    >
-      <header
-        style={{
-          background: C.panel,
-          borderBottom: `1px solid ${C.border}`,
-          padding: '0 1rem',
-          height: 52,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexShrink: 0,
-          zIndex: 100,
-        }}
-      >
-        <Link
-          to="/"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            ...displayFont,
-            fontSize: '0.95rem',
-            fontWeight: 800,
-            color: C.max,
-            letterSpacing: '-0.03em',
-            textDecoration: 'none',
-          }}
-        >
-          <Wordmark textClassName="text-sm" />
+    <div className="bg-[#070707]" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <header className="z-[100] flex h-[60px] shrink-0 items-center justify-between px-4">
+        <Link to="/" aria-label="Swipass home" className="text-[color:var(--ink)]">
+          <Wordmark textClassName="text-[1.15rem]" />
         </Link>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => setSheetWallet(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.35rem 0.75rem',
-              border: `1px solid ${C.border}`,
-              borderRadius: 40,
-              background: 'none',
-              cursor: 'pointer',
-              fontFamily: "'DM Mono',monospace",
-              fontSize: '0.68rem',
-              color: isConnected ? C.body : C.muted,
-              transition: 'all 0.2s',
-            }}
+            className={`chip h-9 text-[0.76rem] ${isConnected ? 'f-mono text-[color:var(--ink-2)]' : 'text-[color:var(--ink-3)]'}`}
           >
             <PulseDot connected={isConnected} />
             {isConnected ? `${address?.slice(0, 4)}...${address?.slice(-3)}` : 'Wallet'}
           </button>
-
           <button
+            type="button"
             onClick={() => setSheetNetwork(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.35rem 0.6rem',
-              border: `1px solid ${C.border}`,
-              borderRadius: 40,
-              background: 'none',
-              cursor: 'pointer',
-              fontFamily: "'DM Mono',monospace",
-              fontSize: '0.68rem',
-              color: C.muted,
-            }}
+            className="chip h-9 text-[0.76rem] text-[color:var(--ink-3)]"
           >
             {displayChains[fromChainIdx]?.slice(0, 3) || '...'}
             <Icon.ChevronDown size={9} />
@@ -141,36 +86,46 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
         </div>
       </header>
 
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' as any, position: 'relative' }}>
+      <div className="relative min-h-0 flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' as any }}>
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundImage: `radial-gradient(circle, ${C.surface2} 1px, transparent 1px)`,
-            backgroundSize: '24px 24px',
-            opacity: 0.2,
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        />
+          className="hero-frame pointer-events-none fixed inset-x-2 bottom-2 top-[60px] overflow-hidden rounded-[1.6rem] border border-white/[0.07]"
+          aria-hidden="true"
+        >
+          <div className="hero-blob hero-blob-a" />
+        </div>
 
-        <div style={{ position: 'relative', zIndex: 1, padding: '1.25rem 1rem', paddingBottom: '5rem' }}>
+        <div className="relative z-[1] px-4 pb-32 pt-7">
           {mobileTab === 'command' && (
-            <CommandCard ctx={ctx} onOpenNetwork={() => setSheetNetwork(true)} />
+            <>
+              {idle && (
+                <div className="app-rise mb-6 text-center">
+                  <h1 className="text-[2.3rem] font-light leading-[1] tracking-[-0.045em] text-[color:var(--ink)]">
+                    Say what you <span className="f-serif fade-word pr-1 italic">need.</span>
+                  </h1>
+                  <p className="mx-auto mt-3 max-w-[18rem] text-[0.88rem] leading-relaxed text-[color:var(--ink-3)]">
+                    Swipass compares every provider and hands you one transaction to sign.
+                  </p>
+                </div>
+              )}
+              <CommandCard ctx={ctx} onOpenNetwork={() => setSheetNetwork(true)} />
+            </>
           )}
 
           {mobileTab === 'preview' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <TxPreviewContent
-              result={result}
-              displayChains={displayChains}
-              feeInfo={ctx.feeInfo}
-              tokens={ctx.tokens}
-              tokenTotal={ctx.tokenTotal}
-              tokenQuery={ctx.tokenQuery}
-              onTokenQuery={ctx.setTokenQuery}
-              approval={approval}
-            />
+            <div className="app-rise flex flex-col gap-3">
+              <div className="app-panel p-4">
+                <div className="kicker mb-4">Transaction preview</div>
+                <TxPreviewContent
+                  result={result}
+                  displayChains={displayChains}
+                  feeInfo={ctx.feeInfo}
+                  tokens={ctx.tokens}
+                  tokenTotal={ctx.tokenTotal}
+                  tokenQuery={ctx.tokenQuery}
+                  onTokenQuery={ctx.setTokenQuery}
+                  approval={approval}
+                />
+              </div>
               {result && (
                 <ConfirmButton
                   result={result}
@@ -185,97 +140,46 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
           )}
 
           {mobileTab === 'history' && (
-            <div>
-              <div
-                style={{
-                  marginBottom: '1.25rem',
-                  padding: '1rem',
-                  background: C.panel,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 10,
-                }}
-              >
-                <StatsRow
-                  totalVolume={totalVolume}
-                  settled={settledCount}
-                  total={commandHistory.length}
-                  centered
-                />
+            <div className="app-rise flex flex-col gap-3">
+              <div className="app-panel px-4 py-5">
+                <StatsRow totalVolume={totalVolume} settled={settledCount} total={commandHistory.length} centered />
               </div>
-              <HistoryContent commandHistory={commandHistory} isConnected={ctx.isConnected} />
+              <div className="app-panel px-2 py-1">
+                <HistoryContent commandHistory={commandHistory} isConnected={isConnected} />
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: C.panel,
-          borderTop: `1px solid ${C.border}`,
-          display: 'flex',
-          alignItems: 'stretch',
-          zIndex: 200,
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
+      <nav
+        aria-label="App sections"
+        className="fixed inset-x-3 z-[200] flex items-center gap-1 rounded-full border border-white/[0.1] bg-[#111111]/85 p-1.5 backdrop-blur-2xl"
+        style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom))', boxShadow: '0 20px 50px -20px rgba(0,0,0,0.9)' }}
       >
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setMobileTab(tab.id)}
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.25rem',
-              padding: '0.6rem 0',
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              color: mobileTab === tab.id ? C.max : C.muted,
-              borderTop: `2px solid ${mobileTab === tab.id ? C.max : 'transparent'}`,
-              transition: 'all 0.2s',
-              position: 'relative',
-            }}
-          >
-            <tab.Icon size={18} />
-            <span
-              style={{
-                fontSize: '0.6rem',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                fontFamily: "'DM Mono',monospace",
-              }}
+        {tabs.map(tab => {
+          const active = mobileTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setMobileTab(tab.id)}
+              aria-current={active ? 'page' : undefined}
+              className={`relative flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-[0.78rem] transition-all duration-300 ${
+                active ? 'bg-[color:var(--ink)] text-[#0a0a0a]' : 'text-[color:var(--ink-3)]'
+              }`}
             >
+              <tab.Icon size={16} />
               {tab.label}
-            </span>
-            {tab.badge && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 6,
-                  right: 'calc(50% - 16px)',
-                  background: C.mid,
-                  color: C.max,
-                  borderRadius: 10,
-                  fontSize: '0.5rem',
-                  padding: '0.05rem 0.35rem',
-                  minWidth: 14,
-                  textAlign: 'center',
-                  fontFamily: "'DM Mono',monospace",
-                }}
-              >
-                {tab.badge}
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
+              {tab.badge && !active && (
+                <span className="f-mono absolute right-2 top-1 min-w-[1rem] rounded-full bg-white/20 px-1 text-center text-[0.55rem] leading-4 text-[color:var(--ink)]">
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </nav>
 
       <BottomSheet open={sheetWallet} onClose={() => setSheetWallet(false)} title="Wallet" maxHeight="70vh">
         <WalletPanelContent
@@ -288,52 +192,30 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
         />
       </BottomSheet>
 
-      <BottomSheet
-        open={sheetNetwork}
-        onClose={() => setSheetNetwork(false)}
-        title="Select Network"
-        maxHeight="75vh"
-      >
-        {displayChains.map((chain, idx) => (
-          <button
-            key={chain}
-            onClick={async () => {
-              await handleNetworkSwitch(idx)
-              setSheetNetwork(false)
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              padding: '0.9rem 0',
-              width: '100%',
-              border: 'none',
-              borderBottom: `1px solid ${C.border}`,
-              background: 'none',
-              color: fromChainIdx === idx ? C.max : C.body,
-              fontFamily: "'DM Mono',monospace",
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <PulseDot connected={fromChainIdx === idx} size={7} />
-            {chain}
-            {fromChainIdx === idx && (
-              <span
-                style={{
-                  marginLeft: 'auto',
-                  fontSize: '0.65rem',
-                  color: C.muted,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                }}
-              >
-                Selected
-              </span>
-            )}
-          </button>
-        ))}
+      <BottomSheet open={sheetNetwork} onClose={() => setSheetNetwork(false)} title="Select network" maxHeight="75vh">
+        <div className="flex flex-col gap-1">
+          {displayChains.map((chain, idx) => (
+            <button
+              key={chain}
+              type="button"
+              onClick={async () => {
+                await handleNetworkSwitch(idx)
+                setSheetNetwork(false)
+              }}
+              className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3.5 text-left text-[0.95rem] transition-colors ${
+                fromChainIdx === idx ? 'bg-white/[0.07] text-[color:var(--ink)]' : 'text-[color:var(--ink-2)]'
+              }`}
+            >
+              <PulseDot connected={fromChainIdx === idx} size={7} />
+              {chain}
+              {fromChainIdx === idx && (
+                <span className="f-mono ml-auto text-[0.62rem] uppercase tracking-[0.14em] text-[color:var(--ink-4)]">
+                  Selected
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </BottomSheet>
     </div>
   )
