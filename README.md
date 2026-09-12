@@ -88,10 +88,10 @@ To add a public page, add its `<Route>` in `src/App.tsx` and an entry in
 `src/seo/pages.ts`. The canonical origin is `https://www.swipass.com`
 (`src/seo/site.ts`), because `swipass.com` redirects there.
 
-Search Console and Bing Webmaster Tools are best verified by DNS, which needs
-nothing here. For the HTML-tag method instead, set
-`SEO_GOOGLE_SITE_VERIFICATION` / `SEO_BING_SITE_VERIFICATION` in the Vercel
-project settings and redeploy.
+Search console ownership tokens (the HTML-tag method) live in
+`SITE.verification` in `src/seo/site.ts` and are printed in every page's
+`<head>`. The `SEO_GOOGLE_SITE_VERIFICATION` / `SEO_BING_SITE_VERIFICATION`
+build variables override them.
 
 The social preview image `public/og-image.png` is rendered from
 `scripts/og/og-image.html`:

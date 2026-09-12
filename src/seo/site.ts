@@ -23,6 +23,13 @@ export const SITE = {
     alt: 'Swipass: DeFi in plain language. Speak. Swipe. Settle.',
   },
   sameAs: ['https://github.com/Swipass'],
+  // Ownership tokens for the search consoles' HTML-tag method. Public by
+  // design: they are printed in every page's <head>. The
+  // SEO_*_SITE_VERIFICATION build variables override them.
+  verification: {
+    google: 'LQh5v2PuNcRphRowDnJB2bGIFTDjNujfoE7xqCr2U5g',
+    bing: '',
+  },
   // IndexNow ownership key. Public by design: the build serves it at /<key>.txt.
   indexNowKey: 'ca4cb2c3aebc0a4d5fa6b11e02bf8164',
 } as const

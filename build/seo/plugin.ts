@@ -8,6 +8,7 @@ import path from 'node:path'
 import type { Plugin } from 'vite'
 import type { HeadTag } from '../../src/seo/headTags.ts'
 import { NOT_FOUND_PAGE, PAGES } from '../../src/seo/pages.ts'
+import { SITE } from '../../src/seo/site.ts'
 import { crawlerFiles } from './crawlerFiles.ts'
 import { renderPage } from './html.ts'
 import { validateOutput } from './validate.ts'
@@ -19,10 +20,13 @@ export interface SeoPluginOptions {
   bingVerification?: string
 }
 
-function verificationTags({ googleVerification, bingVerification }: SeoPluginOptions): HeadTag[] {
+// Build variables win; otherwise the tokens committed in SITE.verification.
+function verificationTags(options: SeoPluginOptions): HeadTag[] {
+  const google = options.googleVerification || SITE.verification.google
+  const bing = options.bingVerification || SITE.verification.bing
   const tags: HeadTag[] = []
-  if (googleVerification) tags.push({ tag: 'meta', attrs: { name: 'google-site-verification', content: googleVerification } })
-  if (bingVerification) tags.push({ tag: 'meta', attrs: { name: 'msvalidate.01', content: bingVerification } })
+  if (google) tags.push({ tag: 'meta', attrs: { name: 'google-site-verification', content: google } })
+  if (bing) tags.push({ tag: 'meta', attrs: { name: 'msvalidate.01', content: bing } })
   return tags
 }
 
