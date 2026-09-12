@@ -72,6 +72,8 @@ body.cursor-hover #cursor-ring { width: 46px; height: 46px; border-color: var(--
 .font-display { font-family: 'Syne', sans-serif; }
 .font-body { font-family: 'DM Mono', monospace; }
 .font-serif { font-family: 'Instrument Serif', serif; }
+/* The wordmark, everywhere it appears (see components/Logo.tsx). */
+.font-wordmark { font-family: 'Geist', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.055em; }
 
 .section-label {
   display: inline-block;

@@ -1,0 +1,53 @@
+/* Docs: cards, tables, steps and section transitions in the site language. */
+
+.site .docs-card {
+  border-radius: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.site .docs-table-wrap {
+  border-radius: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.015);
+}
+.site .docs-thead {
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--ink-3);
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.site .docs-thead th { font-weight: 400; }
+.site .docs-body tbody tr { transition: background 0.3s var(--ease); }
+.site .docs-body tbody tr:hover { background: rgba(255, 255, 255, 0.025); }
+
+.site .docs-body a.underline { text-decoration-color: rgba(255, 255, 255, 0.3); text-underline-offset: 3px; }
+.site .docs-body a.underline:hover { color: var(--ink); text-decoration-color: var(--ink); }
+
+.site .docs-step-num {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--ink);
+}
+
+/* Each section animates in when the pager or sidebar reveals it. */
+.site #doc-article > section { animation: docIn 0.7s var(--ease) both; }
+@keyframes docIn {
+  from { opacity: 0; transform: translateY(14px); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site #doc-article > section { animation: none; }
+}

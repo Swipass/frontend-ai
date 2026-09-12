@@ -47,7 +47,7 @@ export function Wordmark({
 }) {
   return (
     <span
-      className={`inline-flex items-baseline font-display font-extrabold tracking-tighter ${textClassName} ${className}`}
+      className={`inline-flex items-baseline font-wordmark ${textClassName} ${className}`}
       aria-label="Swipass"
     >
       <span>Sw</span>

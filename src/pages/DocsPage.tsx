@@ -4,8 +4,14 @@ import { useFeeRates } from '../hooks/useFeeRates'
 import { Link, useLocation } from 'react-router-dom'
 import { config } from '../config'
 import { useCursorHover } from '../site/hooks'
+import { SiteFooter } from '../site/SiteFooter'
 import { SiteNav } from '../site/SiteNav'
+import { DocsCta } from '../site/docs/DocsCta'
+import { DocsHero } from '../site/docs/DocsHero'
+import { DocsPager } from '../site/docs/DocsPager'
+import { DocsSidebar } from '../site/docs/DocsSidebar'
 import '../site/ui'
+import '../site/docs/docs.css'
 
 const HTTP_LANGS = ['JavaScript', 'Python', 'Go', 'Rust', 'cURL']
 
@@ -472,17 +478,23 @@ function CodeBlock({ code, lang }: { code: string; lang: string }) {
   const [copied, setCopied] = useState(false)
   const copy = () => { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000) }
   return (
-    <div className="bg-deepest-dark border border-dark-grey-3 rounded-lg overflow-hidden">
-      <div className="flex justify-between items-center px-3 py-2 bg-dark-grey-2 border-b border-dark-grey-3">
-        <span className="text-xs uppercase tracking-wide text-light-grey-1">{lang}</span>
+    <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0c0c] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.025] px-4 py-2.5">
+        <div className="flex items-center gap-3">
+          <span className="flex gap-1.5" aria-hidden="true">
+            {[0, 1, 2].map(i => <span key={i} className="h-2 w-2 rounded-full bg-white/[0.14]" />)}
+          </span>
+          <span className="f-mono text-[0.66rem] uppercase tracking-[0.14em] text-light-grey-2">{lang}</span>
+        </div>
         <button
+          type="button"
           onClick={copy}
-          className="bg-none border-none text-xs text-light-grey-1 hover:text-light-grey-3 font-mono uppercase tracking-wide"
+          className="f-mono rounded-full border border-white/[0.1] px-2.5 py-1 text-[0.62rem] uppercase tracking-[0.12em] text-light-grey-2 transition-colors hover:bg-white/[0.06] hover:text-almost-white"
         >
-          {copied ? '✓ Copied' : 'Copy'}
+          {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <pre className="p-4 font-mono text-xs md:text-sm text-light-grey-2 leading-relaxed overflow-x-auto max-h-96">
+      <pre className="f-mono max-h-[28rem] overflow-x-auto p-5 text-[0.78rem] leading-[1.75] text-light-grey-3 md:text-[0.82rem]">
         <code>{code}</code>
       </pre>
     </div>
@@ -493,15 +505,16 @@ function ExampleTabs({ examples, langs }: { examples: Record<string, string>; la
   const [activeLang, setActiveLang] = useState(langs[0])
   return (
     <div>
-      <div className="flex flex-wrap border-b border-dark-grey-3 mb-4">
+      <div className="mb-4 flex w-fit max-w-full flex-wrap gap-1 rounded-full border border-white/[0.08] bg-white/[0.03] p-1">
         {langs.map(lang => (
           <button
             key={lang}
+            type="button"
             onClick={() => setActiveLang(lang)}
-            className={`px-3 py-2 font-mono text-xs uppercase tracking-wide transition-colors cursor-none ${
+            className={`rounded-full px-3.5 py-1.5 text-[0.78rem] transition-all duration-300 ${
               activeLang === lang
-                ? 'text-almost-white border-b-2 border-light-grey-3'
-                : 'text-light-grey-1 border-b-2 border-transparent hover:text-light-grey-3'
+                ? 'bg-[color:var(--ink)] text-[#0a0a0a]'
+                : 'text-light-grey-2 hover:text-almost-white'
             }`}
           >
             {lang}
@@ -518,7 +531,7 @@ const SDK_EXAMPLES = makeSdkExamples()
 
 const H2 = 'text-[1.7rem] sm:text-[2.1rem] font-light text-almost-white tracking-[-0.035em] mb-4'
 const P = 'text-light-grey-2 text-[0.95rem] leading-relaxed mb-6'
-const CODE_INLINE = 'font-mono bg-dark-grey-2 px-1 py-0.5 rounded text-light-grey-3 text-xs'
+const CODE_INLINE = 'f-mono rounded-md border border-white/[0.08] bg-white/[0.05] px-1.5 py-0.5 text-[0.8em] text-light-grey-3'
 
 export default function DocsPage() {
   // Fee rates are admin-editable at runtime, so they are read rather than written.
@@ -561,60 +574,50 @@ export default function DocsPage() {
     <div className="site min-h-screen bg-[#0a0a0a]">
       <SiteNav />
 
-      {/* Mobile: current section and the section menu toggle, under the site bar. */}
-      <div className="sticky top-[4.5rem] z-30 mt-[4.5rem] flex items-center justify-between border-b border-white/[0.06] bg-[#0a0a0a]/80 px-4 py-2.5 backdrop-blur-xl md:hidden">
+      {/* The docs home opens on the framed hero; every other section starts under the site bar. */}
+      {activeSection === 'introduction' ? (
+        <DocsHero apiBase={API_BASE} onJump={goToSection} />
+      ) : (
+        <div className="h-[4.5rem]" />
+      )}
+
+      {/* Mobile: current section and the section menu toggle. */}
+      <div className="sticky top-[4.5rem] z-30 mt-2 flex items-center justify-between border-b border-white/[0.06] bg-[#0a0a0a]/80 px-4 py-2.5 backdrop-blur-xl md:hidden">
         <span className="kicker truncate">Docs / {DOC_SECTIONS[activeIndex]?.label}</span>
         <button type="button" onClick={() => setMobileMenuOpen(true)} className="chip shrink-0">
           Sections
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto flex md:pt-[4.5rem]">
-        {/* Sidebar, collapsible on mobile */}
-        <aside className={`
-          fixed inset-y-0 left-0 z-[70] w-72 bg-[#0c0c0c] border-r border-white/[0.06] transform transition-transform duration-300 ease-out
-          md:relative md:z-auto md:w-64 md:translate-x-0 md:block md:top-0 md:bg-transparent
-          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}>
-          <div className="p-4 border-b border-dark-grey-3 md:hidden">
-            <div className="text-xs uppercase tracking-wider text-light-grey-1">Docs Menu</div>
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="absolute top-4 right-4 text-light-grey-1"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <nav className="px-3 py-6 md:sticky md:top-[4.5rem] md:max-h-[calc(100vh-4.5rem)] md:overflow-y-auto">
-            <div className="kicker px-3 pb-3">Documentation</div>
-            {DOC_SECTIONS.map(sec => (
-              <button
-                key={sec.id}
-                onClick={() => goToSection(sec.id)}
-                className={`block w-full rounded-full text-left px-3.5 py-2 text-[0.88rem] transition-all duration-300 ${
-                  activeSection === sec.id
-                    ? 'text-almost-white bg-white/[0.07]'
-                    : 'text-light-grey-2 hover:text-almost-white hover:bg-white/[0.04]'
-                }`}
-              >
-                {sec.label}
-              </button>
-            ))}
-          </nav>
-        </aside>
+      <div className="docs-body mx-auto flex max-w-[1440px] gap-6 px-2 sm:px-4 lg:gap-12 lg:px-8">
+        <DocsSidebar
+          sections={DOC_SECTIONS}
+          active={activeSection}
+          open={mobileMenuOpen}
+          onSelect={goToSection}
+          onClose={() => setMobileMenuOpen(false)}
+        />
 
         {/* Main content: paginated, one section shown at a time. */}
-        <article id="doc-article" className="flex-1 p-6 md:p-8 lg:p-12 max-w-4xl mx-auto">
+        <article id="doc-article" className="min-w-0 max-w-3xl flex-1 px-4 py-10 sm:px-6 md:py-14">
           <style>{`#doc-article > section { display: none } #doc-article > section#${activeSection} { display: block }`}</style>
+
+          <div className="mb-10 flex items-center gap-4">
+            <span className="f-mono text-[0.7rem] text-light-grey-2">
+              {String(activeIndex + 1).padStart(2, '0')} / {String(DOC_SECTIONS.length).padStart(2, '0')}
+            </span>
+            <div className="relative h-px flex-1 bg-white/10">
+              <div
+                className="absolute inset-y-0 left-0 bg-[color:var(--ink)] transition-[width] duration-700"
+                style={{ width: `${((activeIndex + 1) / DOC_SECTIONS.length) * 100}%` }}
+              />
+            </div>
+            <span className="kicker hidden sm:inline">{DOC_SECTIONS[activeIndex]?.label}</span>
+          </div>
 
           {/* 1. Introduction */}
           <section id="introduction" className="mb-12 scroll-mt-20">
-            <h1 className="text-[2.4rem] sm:text-5xl md:text-6xl font-light text-almost-white tracking-[-0.045em] leading-[1.02] mb-6">
-              Swipass API<br />
-              <span className="font-serif italic font-normal tracking-normal text-light-grey-2 text-2xl sm:text-3xl">Developer Documentation</span>
-            </h1>
+            <h2 className={H2}>Overview</h2>
             <p className={P}>
               Swipass turns a plain-language command into an executed cross-chain swap, bridge, or send. A user writes what they want, for example <span className="text-light-grey-3">"Bridge 1 ETH from Arbitrum to Polygon"</span>, and Swipass parses it, sources quotes from every connected liquidity provider, and returns ready-to-sign calldata.
             </p>
@@ -624,11 +627,6 @@ export default function DocsPage() {
             <p className={P}>
               There are two audiences. <span className="text-almost-white font-semibold">End users</span> connect a wallet and go, with no account and no signup. <span className="text-almost-white font-semibold">Developers</span> create an API key in the developer dashboard, embed the flow in their own product, and earn a share of the platform fee on every transaction they route.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <div className="px-3 py-2 bg-dark-grey-1 border border-dark-grey-3 rounded text-xs text-light-grey-2">Base URL: <code className="text-almost-white">{API_BASE || 'your-swipass-host'}</code></div>
-              <div className="px-3 py-2 bg-dark-grey-1 border border-dark-grey-3 rounded text-xs text-light-grey-2">Format: <code className="text-almost-white">application/json</code></div>
-              <div className="px-3 py-2 bg-dark-grey-1 border border-dark-grey-3 rounded text-xs text-light-grey-2">Custody: <code className="text-almost-white">non-custodial</code></div>
-            </div>
           </section>
 
           {/* 2. Authentication */}
@@ -636,36 +634,36 @@ export default function DocsPage() {
             <h2 className={H2}>Authentication</h2>
             <p className={P}>Swipass has two independent authentication models. Do not confuse them: one authenticates programmatic API traffic, the other signs a person into a dashboard.</p>
 
-            <div className="bg-dark-grey-1 border border-dark-grey-3 rounded-lg p-5 mb-4">
+            <div className="docs-card p-5 mb-4">
               <h3 className="text-lg font-medium tracking-[-0.01em] text-almost-white mb-2">Developer API</h3>
-              <p className="text-light-grey-1 text-sm leading-relaxed mb-3">
+              <p className="text-light-grey-2 text-[0.95rem] leading-relaxed mb-3">
                 All <code className={CODE_INLINE}>/v1</code> endpoints authenticate with an API key sent in the <code className={CODE_INLINE}>X-API-Key</code> header. Keys are created per project in the <Link to="/dashboard/developer" className="text-light-grey-3 underline">Developer Dashboard</Link> and are prefixed <code className={CODE_INLINE}>sw_live_</code>.
               </p>
               <CodeBlock code={`X-API-Key: sw_live_1a2b3c4d5e6f7g8h9i0j`} lang="HTTP Header" />
             </div>
 
-            <div className="bg-dark-grey-1 border border-dark-grey-3 rounded-lg p-5 mb-4">
+            <div className="docs-card p-5 mb-4">
               <h3 className="text-lg font-medium tracking-[-0.01em] text-almost-white mb-2">Dashboards</h3>
-              <p className="text-light-grey-1 text-sm leading-relaxed">
+              <p className="text-light-grey-2 text-[0.95rem] leading-relaxed">
                 The developer and admin dashboards sign in with self-hosted OAuth using Google or GitHub only. There are no passwords. A successful sign-in issues a session <code className={CODE_INLINE}>Bearer</code> token that the dashboard sends on its own requests. This session is entirely separate from the <code className={CODE_INLINE}>X-API-Key</code> that authenticates programmatic API calls.
               </p>
             </div>
 
-            <div className="bg-dark-grey-1 border border-dark-grey-3 rounded-lg p-4 overflow-x-auto">
+            <div className="docs-card p-4 overflow-x-auto">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div className="font-mono text-light-grey-3">X-API-Key</div>
+                <div className="f-mono text-light-grey-3">X-API-Key</div>
                 <div className="text-light-grey-1">sw_live_...</div>
                 <div className="text-light-grey-2">Authenticates a developer project on /v1 endpoints</div>
-                <div className="font-mono text-light-grey-3">Authorization</div>
+                <div className="f-mono text-light-grey-3">Authorization</div>
                 <div className="text-light-grey-1">Bearer ...</div>
                 <div className="text-light-grey-2">Dashboard session (Google or GitHub OAuth)</div>
-                <div className="font-mono text-light-grey-3">X-LLM-Provider</div>
+                <div className="f-mono text-light-grey-3">X-LLM-Provider</div>
                 <div className="text-light-grey-1">openai | anthropic</div>
                 <div className="text-light-grey-2">Optional BYO-LLM provider</div>
-                <div className="font-mono text-light-grey-3">X-LLM-API-Key</div>
+                <div className="f-mono text-light-grey-3">X-LLM-API-Key</div>
                 <div className="text-light-grey-1">sk-...</div>
                 <div className="text-light-grey-2">Optional BYO-LLM key (never stored)</div>
-                <div className="font-mono text-light-grey-3">X-LLM-Model</div>
+                <div className="f-mono text-light-grey-3">X-LLM-Model</div>
                 <div className="text-light-grey-1">gpt-4o-mini</div>
                 <div className="text-light-grey-2">Optional BYO-LLM model</div>
               </div>
@@ -687,7 +685,7 @@ export default function DocsPage() {
             <div className="mb-3"><CodeBlock code={`pip install swipass`} lang="shell" /></div>
             <div className="mb-4"><CodeBlock code={SDK_EXAMPLES.Python} lang="Python" /></div>
 
-            <p className="text-light-grey-1 text-sm leading-relaxed">
+            <p className="text-light-grey-2 text-[0.95rem] leading-relaxed">
               The Python SDK also ships <code className={CODE_INLINE}>AsyncSwipassClient</code>, an asyncio client that exposes the same methods with <code className={CODE_INLINE}>await</code>. The SDK repositories contain many detailed, end-to-end examples covering quotes, transaction building, destination routing, BYO-LLM, and status reconciliation.
             </p>
           </section>
@@ -717,12 +715,12 @@ export default function DocsPage() {
                 { method:'POST', path:'/v1/intents/{intent_id}/status', desc:'Reconciliation hook. Call after the wallet signs and the tx settles so the analytics engine can compute truth-return (actual vs quoted).', auth:'X-API-Key (optional)', body:'tx_hash, status, actual_to_amount?' },
                 { method:'GET', path:'/v1/intents/{intent_id}/trace', desc:'The stage-by-stage record of one of your intents: parsed intent, execution graph, every quote, the route chosen, the transaction, and the settled truth-return.', auth:'X-API-Key (required)', body:'-' },
               ].map(ep => (
-                <div key={ep.path} className="bg-dark-grey-1 border border-dark-grey-3 rounded-lg p-4">
+                <div key={ep.path} className="docs-card p-4">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className={`text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded ${
-                      ep.method === 'POST' ? 'bg-mid-grey text-almost-white' : 'bg-dark-grey-2 text-light-grey-1'
+                    <span className={`f-mono rounded-full px-2.5 py-0.5 text-[0.62rem] uppercase tracking-[0.12em] ${
+                      ep.method === 'POST' ? 'bg-[color:var(--ink)] text-[#0a0a0a]' : 'border border-white/[0.16] text-light-grey-2'
                     }`}>{ep.method}</span>
-                    <code className="font-mono text-sm text-light-grey-3">{ep.path}</code>
+                    <code className="f-mono text-[0.9rem] text-almost-white">{ep.path}</code>
                   </div>
                   <p className="text-light-grey-2 text-sm mb-2">{ep.desc}</p>
                   <div className="text-xs text-light-grey-1">Auth: {ep.auth} · Body: {ep.body}</div>
@@ -731,22 +729,22 @@ export default function DocsPage() {
             </div>
 
             <h3 className="text-lg font-medium tracking-[-0.01em] text-almost-white mb-2">POST /v1/intent</h3>
-            <p className="text-light-grey-1 text-sm leading-relaxed mb-3">
+            <p className="text-light-grey-2 text-[0.95rem] leading-relaxed mb-3">
               Request body fields: <code className={CODE_INLINE}>command</code> (required), <code className={CODE_INLINE}>wallet_address</code>, <code className={CODE_INLINE}>destination_address</code>, and <code className={CODE_INLINE}>from_chain_hint</code>. Optional headers: <code className={CODE_INLINE}>X-API-Key</code>, and the BYO-LLM trio <code className={CODE_INLINE}>X-LLM-Provider</code> / <code className={CODE_INLINE}>X-LLM-API-Key</code> / <code className={CODE_INLINE}>X-LLM-Model</code>. The response is an <code className={CODE_INLINE}>IntentResponse</code>:
             </p>
             <div className="mb-6"><CodeBlock code={INTENT_RESPONSE_JSON} lang="JSON response" /></div>
-            <p className="text-light-grey-1 text-sm leading-relaxed mb-6">
+            <p className="text-light-grey-2 text-[0.95rem] leading-relaxed mb-6">
               <code className={CODE_INLINE}>quote</code> is the auto-selected best route, and <code className={CODE_INLINE}>all_quotes</code> holds every provider quote (best first) so you can offer alternatives. <code className={CODE_INLINE}>transaction</code> is the calldata to sign for the selected quote. <code className={CODE_INLINE}>guaranteed_to_amount</code> is the on-chain floor and <code className={CODE_INLINE}>simulation_passed</code> confirms the route cleared pre-flight simulation. It is never set optimistically: when it is false, <code className={CODE_INLINE}>simulation_reason</code> says what stopped the check.
             </p>
 
             <h3 className="text-lg font-medium tracking-[-0.01em] text-almost-white mb-2">POST /v1/intent/build-transaction</h3>
-            <p className="text-light-grey-1 text-sm leading-relaxed mb-3">
+            <p className="text-light-grey-2 text-[0.95rem] leading-relaxed mb-3">
               Post one quote object from a prior <code className={CODE_INLINE}>all_quotes</code> array to rebuild calldata for that specific provider. The signer goes in the <code className={CODE_INLINE}>X-Wallet-Address</code> header; add <code className={CODE_INLINE}>X-Destination-Address</code> to route output elsewhere.
             </p>
             <div className="mb-4"><CodeBlock code={BUILD_TX_REQUEST} lang="HTTP request" /></div>
-            <p className="text-light-grey-1 text-sm leading-relaxed mb-3">The response carries the whole sequence to sign, not just the transaction:</p>
+            <p className="text-light-grey-2 text-[0.95rem] leading-relaxed mb-3">The response carries the whole sequence to sign, not just the transaction:</p>
             <div className="mb-6"><CodeBlock code={BUILD_TX_RESPONSE} lang="JSON response" /></div>
-            <p className="text-light-grey-1 text-sm leading-relaxed mb-3">
+            <p className="text-light-grey-2 text-[0.95rem] leading-relaxed mb-3">
               When the route spends an ERC20 the provider is not yet allowed to move, the same call returns the approval to sign first. See <a href="#approvals" className="text-light-grey-3 underline">Token Approvals</a>.
             </p>
             <div><CodeBlock code={APPROVAL_RESPONSE} lang="JSON response" /></div>
@@ -765,11 +763,11 @@ export default function DocsPage() {
                 ['Sign and broadcast', <>Hand the returned <code className={CODE_INLINE}>transaction</code> calldata to the user's wallet to sign and submit. Swipass is never in the signing path.</>],
                 ['Report status', <>Once the tx settles, POST to <code className={CODE_INLINE}>/v1/intents/{'{intent_id}'}/status</code> with <code className={CODE_INLINE}>tx_hash</code>, <code className={CODE_INLINE}>status</code>, and optionally <code className={CODE_INLINE}>actual_to_amount</code>. This reconciles the intent and powers truth-return analytics.</>],
               ].map(([title, body], i) => (
-                <li key={i} className="flex gap-4 bg-dark-grey-1 border border-dark-grey-3 rounded-lg p-4">
-                  <span className="font-display text-xl font-extrabold text-light-grey-3 shrink-0">{i + 1}</span>
+                <li key={i} className="flex gap-4 docs-card p-4">
+                  <span className="docs-step-num">{String(i + 1).padStart(2, '0')}</span>
                   <div>
                     <div className="text-almost-white font-semibold text-sm mb-1">{title}</div>
-                    <p className="text-light-grey-1 text-sm leading-relaxed">{body}</p>
+                    <p className="text-light-grey-2 text-[0.95rem] leading-relaxed">{body}</p>
                   </div>
                 </li>
               ))}
@@ -785,7 +783,7 @@ export default function DocsPage() {
             <p className={P}>
               When the allowance is short, <code className={CODE_INLINE}>requires_approval</code> is <code className={CODE_INLINE}>true</code> and <code className={CODE_INLINE}>approval</code> carries the exact <code className={CODE_INLINE}>approve(spender, amount)</code> call to sign first. It approves the amount this route needs, not an unlimited allowance. Native assets never need one.
             </p>
-            <div className="bg-dark-grey-1 border border-dark-grey-3 rounded-lg p-4 mb-6">
+            <div className="docs-card p-4 mb-6">
               <ol className="space-y-2 text-sm text-light-grey-1 leading-relaxed list-decimal list-inside">
                 <li>Send the <code className={CODE_INLINE}>approval</code> transaction from the same wallet and wait for its receipt.</li>
                 <li>Call <code className={CODE_INLINE}>/v1/intent/build-transaction</code> again for the same quote.</li>
@@ -803,9 +801,9 @@ export default function DocsPage() {
             <p className={P}>
               Register an endpoint on your project in the developer dashboard and Swipass will POST each intent lifecycle event to it, so your app learns what happened without polling.
             </p>
-            <div className="border border-dark-grey-3 rounded-lg overflow-hidden mb-6">
+            <div className="docs-table-wrap overflow-hidden mb-6">
               <table className="w-full text-sm">
-                <thead className="bg-dark-grey-2 text-light-grey-1 text-xs uppercase tracking-wider">
+                <thead className="docs-thead">
                   <tr>
                     <th className="p-3 text-left">Event</th>
                     <th className="p-3 text-left">When it fires</th>
@@ -817,7 +815,7 @@ export default function DocsPage() {
                     ['intent.completed', 'The transaction settled. Carries the truth return: what landed versus what was quoted.'],
                     ['intent.failed', 'The transaction did not settle.'],
                   ].map(([event, when]) => (
-                    <tr key={event} className="border-b border-dark-grey-3 last:border-0">
+                    <tr key={event} className="border-b border-white/[0.07] last:border-0">
                       <td className="p-3"><code className={CODE_INLINE}>{event}</code></td>
                       <td className="p-3 text-light-grey-1">{when}</td>
                     </tr>
@@ -892,19 +890,19 @@ function verify(secret, header, rawBody) {
             </p>
             <div className="flex flex-wrap gap-2 mb-6">
               {['0x', '1inch', 'Uniswap', 'LI.FI', 'Socket / Bungee', 'Across', 'Stargate'].map(name => (
-                <span key={name} className="px-3 py-1.5 bg-dark-grey-1 border border-dark-grey-3 rounded text-sm text-light-grey-2">{name}</span>
+                <span key={name} className="chip f-mono text-[0.72rem] uppercase tracking-[0.08em]">{name}</span>
               ))}
             </div>
             <p className="text-light-grey-1 text-sm sm:text-base leading-relaxed mb-4">Quotes are ranked by a weighted score:</p>
-            <div className="flex flex-wrap gap-8 p-5 bg-dark-grey-1 border border-dark-grey-3 rounded-lg mb-6">
+            <div className="flex flex-wrap gap-8 p-5 docs-card mb-6">
               {[['Output Amount','70%'],['Speed','20%'],['Historical Success','10%']].map(([l,v]) => (
                 <div key={l}>
                   <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-1">{l}</div>
-                  <div className="font-display text-2xl font-bold text-almost-white">{v}</div>
+                  <div className="f-serif text-[2rem] leading-none text-almost-white">{v}</div>
                 </div>
               ))}
             </div>
-            <p className="text-light-grey-1 text-sm leading-relaxed">
+            <p className="text-light-grey-2 text-[0.95rem] leading-relaxed">
               If the selected provider fails while building the transaction, Swipass fails over to the next best quote from the original set before anything is signed. Providers are modular, so new protocols can be added without changing the API surface. The public <code className={CODE_INLINE}>/v1/analytics/providers</code> ratings feed the historical-success weight.
             </p>
           </section>
@@ -913,18 +911,18 @@ function verify(secret, header, rawBody) {
           <section id="fees" className="mb-12 scroll-mt-20">
             <h2 className={H2}>Fees & Revenue Sharing</h2>
             <p className={P}>The platform fee is taken from the swap output. Developers who route volume earn a share of it.</p>
-            <div className="border border-dark-grey-3 rounded-lg overflow-hidden overflow-x-auto mb-6">
+            <div className="docs-table-wrap overflow-hidden overflow-x-auto mb-6">
               <table className="w-full">
-                <thead className="bg-dark-grey-2 text-light-grey-1 text-xs uppercase tracking-wider">
+                <thead className="docs-thead">
                   <tr><th className="p-3 text-left">User Type</th><th className="p-3 text-left">Platform Fee</th><th className="p-3 text-left">Developer Share</th></tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-dark-grey-3"><td className="p-3 text-light-grey-2">Direct Swipass user</td><td className="p-3 text-light-grey-2">{fees.direct || 'unavailable'}</td><td className="p-3 text-light-grey-2">n/a</td></tr>
+                  <tr className="border-b border-white/[0.07]"><td className="p-3 text-light-grey-2">Direct Swipass user</td><td className="p-3 text-light-grey-2">{fees.direct || 'unavailable'}</td><td className="p-3 text-light-grey-2">n/a</td></tr>
                   <tr className="bg-dark-grey-1"><td className="p-3 text-almost-white font-medium">Via a developer app</td><td className="p-3 text-light-grey-2">{fees.developer || 'unavailable'}</td><td className="p-3 text-almost-white font-semibold">{fees.developerCut || 'unavailable'}{fees.revenueShare ? ` (${fees.revenueShare} share)` : ''}</td></tr>
                 </tbody>
               </table>
             </div>
-            <p className="text-light-grey-1 text-sm leading-relaxed">
+            <p className="text-light-grey-2 text-[0.95rem] leading-relaxed">
               For transactions routed through a developer app, the {fees.developer || 'platform'} fee is split {fees.revenueShare ? `${fees.revenueShare} to the developer` : 'with the developer'}, so the developer earns {fees.developerCut || 'their share'}. The split is configurable per project. Earnings accrue in your project balance and become withdrawable once the balance passes the payout threshold, paid to your configured EVM payout wallet. These rates are read live from the API, so what you see here is what is in force.
             </p>
           </section>
@@ -934,9 +932,9 @@ function verify(secret, header, rawBody) {
             <h2 className={H2}>Error Reference</h2>
             <p className={P}>Errors return a consistent envelope with an HTTP status and a structured body:</p>
             <div className="mb-6"><CodeBlock code={ERROR_ENVELOPE} lang="JSON error envelope" /></div>
-            <div className="border border-dark-grey-3 rounded-lg overflow-hidden overflow-x-auto mb-4">
+            <div className="docs-table-wrap overflow-hidden overflow-x-auto mb-4">
               <table className="w-full text-sm">
-                <thead className="bg-dark-grey-2 text-light-grey-1 text-xs uppercase tracking-wider">
+                <thead className="docs-thead">
                   <tr><th className="p-3 text-left">Status</th><th className="p-3 text-left">error</th><th className="p-3 text-left">When it happens</th></tr>
                 </thead>
                 <tbody>
@@ -947,50 +945,24 @@ function verify(secret, header, rawBody) {
                     [503,'service_paused','The platform is temporarily paused for maintenance.'],
                     [500,'internal_error','Unexpected server error. Retry with backoff.'],
                   ].map(([status, code, msg]) => (
-                    <tr key={code as string} className="border-b border-dark-grey-3">
-                      <td className="p-3 font-mono text-light-grey-2 align-top">{status}</td>
-                      <td className="p-3 font-mono text-light-grey-2 align-top">{code}</td>
+                    <tr key={code as string} className="border-b border-white/[0.07]">
+                      <td className="p-3 f-mono text-light-grey-2 align-top">{status}</td>
+                      <td className="p-3 f-mono text-light-grey-2 align-top">{code}</td>
                       <td className="p-3 text-light-grey-1">{msg}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <p className="text-light-grey-1 text-sm leading-relaxed">The official SDKs surface these responses as typed errors, so you can branch on the status without parsing the envelope by hand.</p>
+            <p className="text-light-grey-2 text-[0.95rem] leading-relaxed">The official SDKs surface these responses as typed errors, so you can branch on the status without parsing the envelope by hand.</p>
           </section>
 
-          {/* Previous / Next pagination */}
-          <div className="mt-4 pt-6 border-t border-dark-grey-3 grid grid-cols-2 gap-4">
-            {prevSection ? (
-              <button
-                onClick={() => goToSection(prevSection.id)}
-                className="group text-left p-4 border border-dark-grey-3 rounded-lg hover:border-light-grey-1 hover:bg-dark-grey-2 transition-all duration-200"
-              >
-                <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-1">Previous</div>
-                <div className="text-[0.95rem] text-light-grey-3 group-hover:text-almost-white">
-                  {prevSection.label}
-                </div>
-              </button>
-            ) : (
-              <span />
-            )}
-            {nextSection ? (
-              <button
-                onClick={() => goToSection(nextSection.id)}
-                className="group text-right p-4 border border-dark-grey-3 rounded-lg hover:border-light-grey-1 hover:bg-dark-grey-2 transition-all duration-200"
-              >
-                <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-1">Next</div>
-                <div className="text-[0.95rem] text-light-grey-3 group-hover:text-almost-white">
-                  {nextSection.label}
-                </div>
-              </button>
-            ) : (
-              <span />
-            )}
-          </div>
-
+          <DocsPager prev={prevSection} next={nextSection} onGo={goToSection} />
         </article>
       </div>
+
+      <DocsCta />
+      <SiteFooter />
     </div>
   )
 }

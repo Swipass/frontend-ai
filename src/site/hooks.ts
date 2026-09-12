@@ -2,6 +2,7 @@
 // Small hooks shared by the public site: visibility, motion preference, and
 // the live platform data the landing page shows.
 import { useEffect, useState, type RefObject } from 'react'
+import { config } from '../config'
 import { intentService, type ChainInfo, type ProviderInfo, type SystemStats } from '../services/intentService'
 
 /** True once (or while, with `once: false`) the element is on screen. */
@@ -58,6 +59,25 @@ export function useCursorHover(): void {
       document.body.classList.remove('cursor-hover')
     }
   }, [])
+}
+
+export type ApiHealth = 'checking' | 'up' | 'down'
+
+/** Whether the Swipass API answers its liveness check right now. */
+export function useApiHealth(): ApiHealth {
+  const [health, setHealth] = useState<ApiHealth>('checking')
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${config.apiUrl}/health`)
+      .then((response) => !cancelled && setHealth(response.ok ? 'up' : 'down'))
+      .catch(() => !cancelled && setHealth('down'))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  return health
 }
 
 export interface LandingData {
