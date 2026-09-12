@@ -161,7 +161,22 @@ export interface ProviderRating {
   count?: number
 }
 
+// Public platform status: whether the app is taking intents and which kinds.
+// bridging, swaps and direct are true when available.
+export interface PlatformStatus {
+  paused: boolean
+  message: string | null
+  bridging: boolean
+  swaps: boolean
+  direct: boolean
+}
+
 export const intentService = {
+  async getStatus(): Promise<PlatformStatus> {
+    const res = await apiClient.get('/v1/status')
+    return res.data
+  },
+
   async execute(req: IntentRequest, headers?: Record<string, string>): Promise<IntentResponse> {
     const res = await apiClient.post('/v1/intent', req, { headers })
     return res.data
