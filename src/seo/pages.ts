@@ -37,6 +37,11 @@ export const SHARED_SOURCES = [
   'src/App.tsx',
   'src/index.css',
   'src/components/Logo.tsx',
+  'src/site/site.css',
+  'src/site/ui.tsx',
+  'src/site/hooks.ts',
+  'src/site/SiteNav.tsx',
+  'src/site/SiteFooter.tsx',
 ]
 
 export const PAGES: SeoPage[] = [
@@ -56,7 +61,7 @@ export const PAGES: SeoPage[] = [
     ],
     snapshot: ['features', 'faq'],
     schema: ['webApplication', 'faq'],
-    sources: ['src/pages/LandingPage.tsx', 'src/components/landing/', 'src/content/'],
+    sources: ['src/pages/LandingPage.tsx', 'src/site/landing/', 'src/content/'],
   },
   {
     id: 'app',

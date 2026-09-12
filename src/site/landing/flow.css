@@ -1,0 +1,29 @@
+/* How it works: the roles diagram. Motion runs only while it is on screen. */
+
+.site .flow-dash {
+  stroke-dasharray: 3 5;
+  animation: dashFlow 1.4s linear infinite;
+  animation-play-state: paused;
+}
+.site .flow-live .flow-dash,
+.site .flow-live .rope,
+.site .flow-live .step-line { animation-play-state: running; }
+@keyframes dashFlow { to { stroke-dashoffset: -16; } }
+
+.site .rope {
+  stroke-dasharray: 1.6 3.4;
+  animation: ropeTurn 40s linear infinite;
+  animation-play-state: paused;
+}
+@keyframes ropeTurn { to { stroke-dashoffset: -600; } }
+
+.site .flow-piece { opacity: 0; transform: translateY(10px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
+.site .flow-live .flow-piece { opacity: 1; transform: none; }
+
+.site .step-line {
+  background-image: linear-gradient(to bottom, var(--ink-2) 50%, transparent 50%);
+  background-size: 1px 8px;
+  animation: stepFlow 0.9s linear infinite;
+  animation-play-state: paused;
+}
+@keyframes stepFlow { to { background-position: 0 8px; } }

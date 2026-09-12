@@ -120,6 +120,20 @@ Grey palette defined in `tailwind.config.js` and `src/index.css`:
 
 Fonts: `Syne` (display), `DM Mono` (body), `Instrument Serif` (italic accents)
 
+### Public site
+
+The landing, docs, sign-in and 404 pages use their own system in `src/site/`,
+scoped under the `.site` class so the app and dashboards are untouched:
+
+- Type: `Geist` (UI and headlines, light weights), `Geist Mono` (labels and
+  data), `Instrument Serif` (editorial accents). `Syne` stays for the wordmark.
+- Surfaces: dark stages framed in rounded panels, and light "paper" panels
+  (`.paper`) that invert the same grayscale scale.
+- Primitives: `ui.tsx` (`Reveal`, `PillLink`, `SectionIntro`), `SiteNav`,
+  `SiteFooter`, and the landing sections in `src/site/landing/`.
+- Motion runs on canvas and CSS, pauses off screen, and respects
+  `prefers-reduced-motion`.
+
 ## Build
 
 ```bash

@@ -3,7 +3,9 @@ import { useState, useEffect } from 'react'
 import { useFeeRates } from '../hooks/useFeeRates'
 import { Link, useLocation } from 'react-router-dom'
 import { config } from '../config'
-import { Wordmark } from '../components/Logo'
+import { useCursorHover } from '../site/hooks'
+import { SiteNav } from '../site/SiteNav'
+import '../site/ui'
 
 const HTTP_LANGS = ['JavaScript', 'Python', 'Go', 'Rust', 'cURL']
 
@@ -514,8 +516,8 @@ function ExampleTabs({ examples, langs }: { examples: Record<string, string>; la
 const HTTP_EXAMPLES = makeHttpExamples(API_BASE)
 const SDK_EXAMPLES = makeSdkExamples()
 
-const H2 = 'font-display text-2xl sm:text-3xl font-bold text-almost-white tracking-tighter mb-4'
-const P = 'text-light-grey-1 text-sm sm:text-base leading-relaxed mb-6'
+const H2 = 'text-[1.7rem] sm:text-[2.1rem] font-light text-almost-white tracking-[-0.035em] mb-4'
+const P = 'text-light-grey-2 text-[0.95rem] leading-relaxed mb-6'
 const CODE_INLINE = 'font-mono bg-dark-grey-2 px-1 py-0.5 rounded text-light-grey-3 text-xs'
 
 export default function DocsPage() {
@@ -524,6 +526,7 @@ export default function DocsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('introduction')
   const location = useLocation()
+  useCursorHover()
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -555,36 +558,22 @@ export default function DocsPage() {
     activeIndex >= 0 && activeIndex < DOC_SECTIONS.length - 1 ? DOC_SECTIONS[activeIndex + 1] : null
 
   return (
-    <div className="min-h-screen bg-deepest-dark font-sans">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-deepest-dark/85 backdrop-blur-md border-b border-dark-grey-3 px-4 sm:px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="flex items-center gap-2 font-display text-xl font-extrabold text-almost-white tracking-tighter">
-            <Wordmark textClassName="text-xl" />
-          </Link>
-          <span className="text-xs uppercase tracking-wider text-light-grey-1 px-2 py-0.5 border border-dark-grey-3 rounded">Docs</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex gap-3">
-            <Link to="/app" className="sw-btn sw-btn-ghost text-xs py-1.5 px-3">Launch App</Link>
-            <Link to="/auth" className="sw-btn sw-btn-primary text-xs py-1.5 px-3">Get API Key</Link>
-          </div>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-almost-white w-8 h-8 flex items-center justify-center border border-dark-grey-3 rounded"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
-      </header>
+    <div className="site min-h-screen bg-[#0a0a0a]">
+      <SiteNav />
 
-      <div className="max-w-7xl mx-auto flex">
+      {/* Mobile: current section and the section menu toggle, under the site bar. */}
+      <div className="sticky top-[4.5rem] z-30 mt-[4.5rem] flex items-center justify-between border-b border-white/[0.06] bg-[#0a0a0a]/80 px-4 py-2.5 backdrop-blur-xl md:hidden">
+        <span className="kicker truncate">Docs / {DOC_SECTIONS[activeIndex]?.label}</span>
+        <button type="button" onClick={() => setMobileMenuOpen(true)} className="chip shrink-0">
+          Sections
+        </button>
+      </div>
+
+      <div className="max-w-7xl mx-auto flex md:pt-[4.5rem]">
         {/* Sidebar, collapsible on mobile */}
         <aside className={`
-          fixed inset-y-0 left-0 z-40 w-64 bg-dark-grey-1 border-r border-dark-grey-3 transform transition-transform duration-200 ease-in-out
-          md:relative md:translate-x-0 md:block md:top-0
+          fixed inset-y-0 left-0 z-[70] w-72 bg-[#0c0c0c] border-r border-white/[0.06] transform transition-transform duration-300 ease-out
+          md:relative md:z-auto md:w-64 md:translate-x-0 md:block md:top-0 md:bg-transparent
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           <div className="p-4 border-b border-dark-grey-3 md:hidden">
@@ -598,15 +587,16 @@ export default function DocsPage() {
               </svg>
             </button>
           </div>
-          <nav className="py-4 md:sticky md:top-14 md:max-h-[calc(100vh-3.5rem)] md:overflow-y-auto">
+          <nav className="px-3 py-6 md:sticky md:top-[4.5rem] md:max-h-[calc(100vh-4.5rem)] md:overflow-y-auto">
+            <div className="kicker px-3 pb-3">Documentation</div>
             {DOC_SECTIONS.map(sec => (
               <button
                 key={sec.id}
                 onClick={() => goToSection(sec.id)}
-                className={`block w-full text-left px-5 py-2.5 text-sm transition-all duration-200 ${
+                className={`block w-full rounded-full text-left px-3.5 py-2 text-[0.88rem] transition-all duration-300 ${
                   activeSection === sec.id
-                    ? 'text-almost-white bg-dark-grey-2 border-l-2 border-light-grey-3'
-                    : 'text-light-grey-1 hover:text-light-grey-3 hover:bg-dark-grey-2'
+                    ? 'text-almost-white bg-white/[0.07]'
+                    : 'text-light-grey-2 hover:text-almost-white hover:bg-white/[0.04]'
                 }`}
               >
                 {sec.label}
@@ -621,9 +611,9 @@ export default function DocsPage() {
 
           {/* 1. Introduction */}
           <section id="introduction" className="mb-12 scroll-mt-20">
-            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-almost-white tracking-tighter leading-tight mb-4">
+            <h1 className="text-[2.4rem] sm:text-5xl md:text-6xl font-light text-almost-white tracking-[-0.045em] leading-[1.02] mb-6">
               Swipass API<br />
-              <span className="font-serif italic font-normal text-light-grey-2 text-2xl sm:text-3xl">Developer Documentation</span>
+              <span className="font-serif italic font-normal tracking-normal text-light-grey-2 text-2xl sm:text-3xl">Developer Documentation</span>
             </h1>
             <p className={P}>
               Swipass turns a plain-language command into an executed cross-chain swap, bridge, or send. A user writes what they want, for example <span className="text-light-grey-3">"Bridge 1 ETH from Arbitrum to Polygon"</span>, and Swipass parses it, sources quotes from every connected liquidity provider, and returns ready-to-sign calldata.
@@ -647,7 +637,7 @@ export default function DocsPage() {
             <p className={P}>Swipass has two independent authentication models. Do not confuse them: one authenticates programmatic API traffic, the other signs a person into a dashboard.</p>
 
             <div className="bg-dark-grey-1 border border-dark-grey-3 rounded-lg p-5 mb-4">
-              <h3 className="font-display text-lg font-bold text-almost-white mb-2">Developer API</h3>
+              <h3 className="text-lg font-medium tracking-[-0.01em] text-almost-white mb-2">Developer API</h3>
               <p className="text-light-grey-1 text-sm leading-relaxed mb-3">
                 All <code className={CODE_INLINE}>/v1</code> endpoints authenticate with an API key sent in the <code className={CODE_INLINE}>X-API-Key</code> header. Keys are created per project in the <Link to="/dashboard/developer" className="text-light-grey-3 underline">Developer Dashboard</Link> and are prefixed <code className={CODE_INLINE}>sw_live_</code>.
               </p>
@@ -655,7 +645,7 @@ export default function DocsPage() {
             </div>
 
             <div className="bg-dark-grey-1 border border-dark-grey-3 rounded-lg p-5 mb-4">
-              <h3 className="font-display text-lg font-bold text-almost-white mb-2">Dashboards</h3>
+              <h3 className="text-lg font-medium tracking-[-0.01em] text-almost-white mb-2">Dashboards</h3>
               <p className="text-light-grey-1 text-sm leading-relaxed">
                 The developer and admin dashboards sign in with self-hosted OAuth using Google or GitHub only. There are no passwords. A successful sign-in issues a session <code className={CODE_INLINE}>Bearer</code> token that the dashboard sends on its own requests. This session is entirely separate from the <code className={CODE_INLINE}>X-API-Key</code> that authenticates programmatic API calls.
               </p>
@@ -689,11 +679,11 @@ export default function DocsPage() {
               Official SDKs wrap the REST API with typed models, retries, and the full intent lifecycle. They are the fastest way to integrate. Both surface API failures as typed errors (see the Error Reference below).
             </p>
 
-            <h3 className="font-display text-lg font-bold text-almost-white mb-2">JavaScript / TypeScript</h3>
+            <h3 className="text-lg font-medium tracking-[-0.01em] text-almost-white mb-2">JavaScript / TypeScript</h3>
             <div className="mb-3"><CodeBlock code={`npm install @swipass/sdk`} lang="shell" /></div>
             <div className="mb-6"><CodeBlock code={SDK_EXAMPLES.JavaScript} lang="TypeScript" /></div>
 
-            <h3 className="font-display text-lg font-bold text-almost-white mb-2">Python</h3>
+            <h3 className="text-lg font-medium tracking-[-0.01em] text-almost-white mb-2">Python</h3>
             <div className="mb-3"><CodeBlock code={`pip install swipass`} lang="shell" /></div>
             <div className="mb-4"><CodeBlock code={SDK_EXAMPLES.Python} lang="Python" /></div>
 
@@ -740,7 +730,7 @@ export default function DocsPage() {
               ))}
             </div>
 
-            <h3 className="font-display text-lg font-bold text-almost-white mb-2">POST /v1/intent</h3>
+            <h3 className="text-lg font-medium tracking-[-0.01em] text-almost-white mb-2">POST /v1/intent</h3>
             <p className="text-light-grey-1 text-sm leading-relaxed mb-3">
               Request body fields: <code className={CODE_INLINE}>command</code> (required), <code className={CODE_INLINE}>wallet_address</code>, <code className={CODE_INLINE}>destination_address</code>, and <code className={CODE_INLINE}>from_chain_hint</code>. Optional headers: <code className={CODE_INLINE}>X-API-Key</code>, and the BYO-LLM trio <code className={CODE_INLINE}>X-LLM-Provider</code> / <code className={CODE_INLINE}>X-LLM-API-Key</code> / <code className={CODE_INLINE}>X-LLM-Model</code>. The response is an <code className={CODE_INLINE}>IntentResponse</code>:
             </p>
@@ -749,7 +739,7 @@ export default function DocsPage() {
               <code className={CODE_INLINE}>quote</code> is the auto-selected best route, and <code className={CODE_INLINE}>all_quotes</code> holds every provider quote (best first) so you can offer alternatives. <code className={CODE_INLINE}>transaction</code> is the calldata to sign for the selected quote. <code className={CODE_INLINE}>guaranteed_to_amount</code> is the on-chain floor and <code className={CODE_INLINE}>simulation_passed</code> confirms the route cleared pre-flight simulation. It is never set optimistically: when it is false, <code className={CODE_INLINE}>simulation_reason</code> says what stopped the check.
             </p>
 
-            <h3 className="font-display text-lg font-bold text-almost-white mb-2">POST /v1/intent/build-transaction</h3>
+            <h3 className="text-lg font-medium tracking-[-0.01em] text-almost-white mb-2">POST /v1/intent/build-transaction</h3>
             <p className="text-light-grey-1 text-sm leading-relaxed mb-3">
               Post one quote object from a prior <code className={CODE_INLINE}>all_quotes</code> array to rebuild calldata for that specific provider. The signer goes in the <code className={CODE_INLINE}>X-Wallet-Address</code> header; add <code className={CODE_INLINE}>X-Destination-Address</code> to route output elsewhere.
             </p>
@@ -977,7 +967,7 @@ function verify(secret, header, rawBody) {
                 className="group text-left p-4 border border-dark-grey-3 rounded-lg hover:border-light-grey-1 hover:bg-dark-grey-2 transition-all duration-200"
               >
                 <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-1">Previous</div>
-                <div className="font-display text-sm font-semibold text-light-grey-3 group-hover:text-almost-white">
+                <div className="text-[0.95rem] text-light-grey-3 group-hover:text-almost-white">
                   {prevSection.label}
                 </div>
               </button>
@@ -990,7 +980,7 @@ function verify(secret, header, rawBody) {
                 className="group text-right p-4 border border-dark-grey-3 rounded-lg hover:border-light-grey-1 hover:bg-dark-grey-2 transition-all duration-200"
               >
                 <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-1">Next</div>
-                <div className="font-display text-sm font-semibold text-light-grey-3 group-hover:text-almost-white">
+                <div className="text-[0.95rem] text-light-grey-3 group-hover:text-almost-white">
                   {nextSection.label}
                 </div>
               </button>

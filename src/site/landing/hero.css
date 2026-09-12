@@ -1,0 +1,118 @@
+/* Hero stage: drifting light, falling streaks, the orb and its indicators. */
+
+.site .hero-frame {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.04), transparent 60%),
+    #070707;
+}
+
+.site .hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  will-change: transform;
+}
+.site .hero-blob-a {
+  width: 70%;
+  aspect-ratio: 1;
+  right: -24%;
+  top: -34%;
+  background: radial-gradient(circle at 40% 45%, rgba(226, 226, 226, 0.5), rgba(140, 140, 140, 0.16) 45%, transparent 70%);
+  animation: blobDrift 20s var(--ease) infinite alternate;
+}
+.site .hero-blob-b {
+  width: 52%;
+  aspect-ratio: 1;
+  left: -22%;
+  bottom: -38%;
+  background: radial-gradient(circle, rgba(200, 200, 200, 0.34), transparent 65%);
+  animation: blobDrift 26s var(--ease) infinite alternate-reverse;
+}
+@keyframes blobDrift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(-7%, 9%, 0) scale(1.14); }
+}
+
+.site .streak {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  overflow: hidden;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.1), transparent);
+}
+.site .streak::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 30%;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.9));
+  animation: streakFall var(--dur, 4s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+@keyframes streakFall {
+  from { top: -30%; }
+  to { top: 110%; }
+}
+
+.site .orb-glow {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 56%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05) 42%, transparent 70%);
+  filter: blur(12px);
+  animation: orbBreathe 7s ease-in-out infinite;
+}
+.site .orb-shell {
+  position: absolute;
+  inset: 17%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 28%, rgba(255, 255, 255, 0.07), rgba(8, 8, 8, 0.55) 72%);
+  box-shadow: inset 0 0 70px rgba(255, 255, 255, 0.05), 0 0 140px rgba(255, 255, 255, 0.05);
+}
+@keyframes orbBreathe {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+.site .node-float { animation: nodeFloat 7s ease-in-out infinite; animation-delay: var(--delay, 0s); }
+@keyframes nodeFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.site .hero-in { animation: heroIn 1.3s var(--ease) both; animation-delay: var(--d, 0ms); }
+@keyframes heroIn {
+  from { opacity: 0; transform: translateY(20px); filter: blur(10px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+.site .cycle-bar { display: flex; gap: 6px; }
+.site .cycle-bar > i {
+  position: relative;
+  flex: 1;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.site .cycle-bar > i.done::after,
+.site .cycle-bar > i.on::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  transform-origin: left;
+}
+.site .cycle-bar > i.on::after { animation: barFill var(--cycle, 2600ms) linear forwards; }
+@keyframes barFill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.site .word-swap { animation: wordSwap 0.7s var(--ease) both; }
+@keyframes wordSwap {
+  from { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}

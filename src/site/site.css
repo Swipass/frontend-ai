@@ -1,0 +1,138 @@
+/* Public site design system: landing, docs, sign-in and 404. The app and the
+   dashboards keep their own styles, so everything here is scoped under .site.
+   Grayscale only (XOT Grey); depth comes from light, blur and line, not hue. */
+
+.site {
+  --ink: #f5f5f5;
+  --ink-2: #d4d4d4;
+  --ink-3: #a3a3a3;
+  --ink-4: #6b6b6b;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.16);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Geist', system-ui, sans-serif;
+  color: var(--ink-2);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light "paper" sections: the same grayscale scale, inverted. */
+.site .paper {
+  --ink: #0a0a0a;
+  --ink-2: #262626;
+  --ink-3: #525252;
+  --ink-4: #737373;
+  --line: rgba(10, 10, 10, 0.12);
+  --line-2: rgba(10, 10, 10, 0.24);
+  background: #e7e7e7;
+  color: var(--ink-2);
+}
+
+.site .f-mono { font-family: 'Geist Mono', ui-monospace, monospace; }
+.site .f-serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; }
+.site .f-brand { font-family: 'Syne', sans-serif; }
+
+/* Small uppercase label above a heading. */
+.site .kicker {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+/* Pill buttons. */
+.site .pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  height: 2.75rem;
+  padding: 0 1.35rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: background 0.35s var(--ease), color 0.35s var(--ease), border-color 0.35s var(--ease), transform 0.35s var(--ease);
+}
+.site .pill:active { transform: scale(0.97); }
+.site .pill svg { transition: transform 0.35s var(--ease); }
+.site .pill:hover svg { transform: translate(2px, -2px); }
+.site .pill-light { background: var(--ink); color: #0a0a0a; }
+.site .paper .pill-light { color: #f5f5f5; }
+.site .pill-light:hover { background: var(--ink-2); }
+.site .pill-dark { background: rgba(255, 255, 255, 0.06); color: var(--ink); border-color: var(--line); backdrop-filter: blur(12px); }
+.site .pill-dark:hover { background: rgba(255, 255, 255, 0.11); border-color: var(--line-2); }
+.site .pill-outline {
+  height: 2.5rem;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border-color: var(--ink-2);
+}
+.site .pill-outline:hover { background: var(--ink); color: #e7e7e7; }
+
+/* Eyebrow chip, e.g. above the hero headline. */
+.site .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+
+/* Frosted card with a lit top edge. */
+.site .glass {
+  position: relative;
+  border-radius: 1.4rem;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
+  backdrop-filter: blur(18px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 30px 80px -40px rgba(0, 0, 0, 0.9);
+}
+
+/* Blueprint grid: faint lines with a dot at each crossing. */
+.site .blueprint {
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.28) 1.2px, transparent 1.6px),
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 160px 160px;
+  background-position: -0.5px -0.5px;
+}
+
+/* Scroll reveal. Elements start hidden only when motion is allowed. */
+.site [data-reveal] {
+  transition: opacity 1s var(--ease), transform 1s var(--ease), filter 1s var(--ease);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.site [data-reveal='hidden'] { opacity: 0; transform: translateY(28px); filter: blur(6px); }
+.site [data-reveal='shown'] { opacity: 1; transform: none; filter: none; }
+
+/* Headline word that fades out to the right, as in the mockups. */
+.site .fade-word {
+  background: linear-gradient(90deg, var(--ink) 0%, var(--ink) 35%, rgba(245, 245, 245, 0.35) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site *,
+  .site *::before,
+  .site *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .site [data-reveal='hidden'] { opacity: 1; transform: none; filter: none; }
+}
