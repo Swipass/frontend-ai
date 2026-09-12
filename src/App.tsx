@@ -12,6 +12,7 @@ import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage'
 import ResetPasswordPage from './pages/Auth/ResetPasswordPage'
 import VerifyEmailPage from './pages/Auth/VerifyEmailPage'
 import NotFoundPage from './pages/NotFoundPage'
+import IntegrationsPage from './pages/IntegrationsPage'
 import { useAuth } from './hooks/useAuth'
 import { WalletProvider } from './components/WalletProvider'
 import { useDocumentHead } from './seo/useDocumentHead'
@@ -108,6 +109,7 @@ export default function App() {
           }
         />
         <Route path="/docs" element={<DocsPage />} />
+        <Route path="/integrations" element={<IntegrationsPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
         <Route path="/auth/reset" element={<ResetPasswordPage />} />

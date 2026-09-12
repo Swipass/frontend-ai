@@ -35,6 +35,13 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: 'Discord', href: '', soon: true },
     ],
   },
+  {
+    title: 'Legal',
+    links: [
+      { label: 'Integrations', href: '/integrations' },
+      { label: 'Disclaimer', href: '/integrations#disclaimer' },
+    ],
+  },
 ]
 
 const STATUS = {
@@ -112,7 +119,7 @@ export function SiteFooter() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
             {COLUMNS.map((column) => (
               <div key={column.title}>
                 <div className="kicker mb-5">{column.title}</div>

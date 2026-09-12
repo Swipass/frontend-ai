@@ -3,6 +3,7 @@ import React from 'react'
 import { ApprovalPayload, IntentResponse } from '../../services/intentService'
 import { C, uppercaseLabel, displayFont, borderBottom, Icon } from './shared'
 import { cexDelta, formatDelta } from './benchmark'
+import { TokenRiskNotice } from './TokenRiskNotice'
 
 interface TxPreviewContentProps {
   result: IntentResponse | null
@@ -227,6 +228,7 @@ export function TxPreviewContent({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {result.token_risk && <TokenRiskNotice risk={result.token_risk} />}
       <div
         style={{
           display: 'flex',

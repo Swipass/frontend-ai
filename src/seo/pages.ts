@@ -99,6 +99,24 @@ export const PAGES: SeoPage[] = [
     sources: ['src/pages/DocsPage.tsx'],
   },
   {
+    id: 'integrations',
+    path: '/integrations',
+    file: 'integrations.html',
+    label: 'Integrations',
+    title: 'Third-Party Integrations and Disclaimer | Swipass',
+    description:
+      'The swap aggregators, bridges, price feeds and security services Swipass routes through, and the terms that apply when you use them.',
+    indexable: true,
+    heading: 'Third-party integrations',
+    summary: [
+      'Swipass compares routes from third-party DEX aggregators, bridges and solver networks, including 0x, 1inch, Uniswap, KyberSwap, ParaSwap, LI.FI, Relay, Across, Stargate and deBridge, and hands you one transaction to sign from your own wallet.',
+      'Public exchange prices from Binance, Coinbase, OKX, Kraken and Bybit are used to compare each route with the exchange price, and GoPlus Security checks the token you are buying for known scam patterns.',
+      'Swipass is non-custodial and does not operate, control or audit these third parties. Using a route is your decision, and any dispute with a third party is between you and that third party.',
+    ],
+    schema: ['breadcrumbs'],
+    sources: ['src/pages/IntegrationsPage.tsx', 'src/content/integrations.ts', 'src/content/providers.ts'],
+  },
+  {
     id: 'auth',
     path: '/auth',
     prefix: true,

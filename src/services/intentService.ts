@@ -93,6 +93,18 @@ export interface IntentResponse {
   approval?: ApprovalPayload | null
   requires_approval?: boolean
   benchmark?: PriceBenchmark | null
+  token_risk?: TokenRisk | null
+}
+
+// Security flags a third party (GoPlus) reports for the token being bought.
+// A warning for the user, never a block.
+export interface TokenRisk {
+  symbol: string
+  chain: string
+  address: string
+  level: 'warning' | 'danger'
+  flags: string[]
+  source: string
 }
 
 export interface SystemStats {
