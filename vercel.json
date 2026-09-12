@@ -2,11 +2,12 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
+    { "source": "/auth/:path+", "destination": "/auth" },
     { "source": "/dashboard/:path*", "destination": "/dashboard" }
   ],
   "headers": [
     {
-      "source": "/auth",
+      "source": "/auth/:path*",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     },
     {

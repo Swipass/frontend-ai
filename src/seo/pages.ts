@@ -101,13 +101,14 @@ export const PAGES: SeoPage[] = [
   {
     id: 'auth',
     path: '/auth',
+    prefix: true,
     file: 'auth.html',
     label: 'Sign in',
     title: 'Sign In | Swipass',
-    description: 'Sign in to the Swipass developer and admin dashboards with Google or GitHub.',
+    description: 'Sign in to the Swipass developer and admin dashboards with email, Google or GitHub.',
     indexable: false,
     heading: 'Sign in to Swipass',
-    summary: ['Developers and admins sign in with Google or GitHub. End users do not need an account.'],
+    summary: ['Developers and admins sign in with email and password, Google or GitHub. End users do not need an account.'],
     sources: [],
   },
   {

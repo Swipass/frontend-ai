@@ -90,6 +90,13 @@
   backdrop-filter: blur(10px);
 }
 
+/* Tailwind's `hidden` (and its responsive re-show) must still beat the
+   pill and chip display above, or a pill can never be hidden on mobile. */
+.site :is(.pill, .chip).hidden { display: none; }
+@media (min-width: 640px) { .site :is(.pill, .chip).sm\:inline-flex { display: inline-flex; } }
+@media (min-width: 768px) { .site :is(.pill, .chip).md\:inline-flex { display: inline-flex; } }
+@media (min-width: 1024px) { .site :is(.pill, .chip).lg\:inline-flex { display: inline-flex; } }
+
 /* Frosted card with a lit top edge. */
 .site .glass {
   position: relative;

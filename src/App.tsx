@@ -8,6 +8,9 @@ import DeveloperDashboard from './pages/DeveloperDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import DocsPage from './pages/DocsPage'
 import AuthPage from './pages/Auth/AuthPage'
+import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage'
+import ResetPasswordPage from './pages/Auth/ResetPasswordPage'
+import VerifyEmailPage from './pages/Auth/VerifyEmailPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { useAuth } from './hooks/useAuth'
 import { WalletProvider } from './components/WalletProvider'
@@ -106,6 +109,9 @@ export default function App() {
         />
         <Route path="/docs" element={<DocsPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
+        <Route path="/auth/reset" element={<ResetPasswordPage />} />
+        <Route path="/auth/verify" element={<VerifyEmailPage />} />
         <Route
           path="/dashboard/developer/*"
           element={

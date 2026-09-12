@@ -1,0 +1,62 @@
+/* Dashboards in the site language. Scoped to .site.dash, so the classes the
+   dashboard pages already use (dash-card, sw-btn, tables, grey utilities)
+   take the new look in place without touching each page.
+   No backdrop-filter on cards: it would trap the pages' fixed-position
+   dialogs inside the card that renders them. */
+
+.site.dash .dash-panel {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.site.dash .dash-card {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
+}
+.site.dash a.dash-card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+}
+
+.site.dash .sw-btn {
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+}
+.site.dash .sw-btn-primary { background: var(--ink); color: #0a0a0a; border-color: transparent; }
+.site.dash .sw-btn-primary:hover { background: var(--ink-2); }
+.site.dash .sw-btn-ghost { background: rgba(255, 255, 255, 0.05); color: var(--ink-2); border-color: rgba(255, 255, 255, 0.1); }
+.site.dash .sw-btn-ghost:hover { background: rgba(255, 255, 255, 0.1); color: var(--ink); border-color: rgba(255, 255, 255, 0.18); }
+
+/* Type: the pages' display and mono classes follow the site's families. */
+.site.dash .font-display { font-family: 'Geist', system-ui, sans-serif; letter-spacing: -0.02em; }
+.site.dash .font-mono { font-family: 'Geist Mono', ui-monospace, monospace; }
+
+/* Softer lines, glass fills and rounder corners for the grey utilities. */
+.site.dash .border-dark-grey-3 { border-color: rgba(255, 255, 255, 0.07); }
+.site.dash .bg-dark-grey-1 { background-color: rgba(255, 255, 255, 0.03); }
+.site.dash .bg-dark-grey-2 { background-color: rgba(255, 255, 255, 0.045); }
+.site.dash .text-light-grey-1 { color: #8c8c8c; }
+.site.dash .rounded { border-radius: 0.6rem; }
+.site.dash .rounded-md { border-radius: 0.75rem; }
+.site.dash .rounded-lg { border-radius: 1rem; }
+
+.site.dash thead { font-family: 'Geist Mono', ui-monospace, monospace; }
+.site.dash thead th { font-weight: 400; letter-spacing: 0.12em; }
+.site.dash tbody tr { transition: background 0.3s var(--ease); }
+.site.dash tbody tr:hover { background: rgba(255, 255, 255, 0.025); }
+
+.site.dash .dash-rise { animation: dashRise 0.7s var(--ease) both; }
+@keyframes dashRise {
+  from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}

@@ -64,7 +64,8 @@ reports that it cannot load its networks rather than showing a stale list.
 | `/` | Landing page, with real backend stats |
 | `/app` | Command interface, wired to the full backend |
 | `/docs` | Developer docs with 5-language code tabs |
-| `/auth` | Sign-in for developers and admins (Google or GitHub) |
+| `/auth` | Sign in or create an account (email + password, Google, GitHub) |
+| `/auth/verify`, `/auth/forgot`, `/auth/reset` | Email confirmation and password recovery, linked from the emails |
 | `/dashboard/developer/*` | Project management, API keys, earnings, payouts |
 | `/dashboard/admin/*` | System controls, transactions, providers, users |
 
