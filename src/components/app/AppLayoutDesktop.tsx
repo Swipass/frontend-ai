@@ -8,6 +8,7 @@ import { WalletPanelContent } from './WalletPanelContent'
 import { TxPreviewContent } from './TxPreviewContent'
 import { ConfirmButton } from './ConfirmButton'
 import { StatsRow } from './StatsRow'
+import { StatusBanner } from './StatusBanner'
 import { PulseDot } from './shared'
 import { OrbCanvas } from '../../site/landing/OrbCanvas'
 
@@ -95,6 +96,7 @@ export function AppLayoutDesktop({ ctx }: AppLayoutDesktopProps) {
           <OrbCanvas />
         </div>
 
+        <StatusBanner className="w-full max-w-[660px] shrink-0 px-6 pt-5" />
         <div className="relative z-[1] m-auto w-full max-w-[660px] px-6 py-10">
           {idle && (
             <div className="app-rise mb-8 text-center">

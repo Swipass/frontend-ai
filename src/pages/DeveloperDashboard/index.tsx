@@ -7,6 +7,7 @@ import { DashShell, type DashNavItem } from '../../site/dashboard/DashShell'
 import AccountPage from '../Account/AccountPage'
 import Overview from './Overview'
 import Projects from './Projects'
+import Requests from './Requests'
 import ApiKeys from './ApiKeys'
 import Usage from './Usage'
 import Payouts from './Payouts'
@@ -18,11 +19,12 @@ const BASE = '/dashboard/developer'
 const NAV: DashNavItem[] = [
   { label: 'Overview', path: '' },
   { label: 'Projects', path: 'projects' },
-  { label: 'API Keys', path: 'keys' },
+  { label: 'Requests', path: 'requests' },
   { label: 'Usage & Analytics', path: 'usage' },
+  { label: 'API Keys', path: 'keys' },
+  { label: 'Webhooks', path: 'webhooks' },
   { label: 'Payouts', path: 'payouts' },
   { label: 'Fee-share', path: 'fee-share' },
-  { label: 'Webhooks', path: 'webhooks' },
   { label: 'Account', path: 'account' },
 ]
 
@@ -37,6 +39,7 @@ export default function DeveloperDashboard() {
     <Routes>
       <Route path="/" element={page('', <Overview />)} />
       <Route path="projects" element={page('projects', <Projects />)} />
+      <Route path="requests" element={page('requests', <Requests />)} />
       <Route path="keys" element={page('keys', <ApiKeys />)} />
       <Route path="usage" element={page('usage', <Usage />)} />
       <Route path="payouts" element={page('payouts', <Payouts />)} />

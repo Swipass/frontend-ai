@@ -1,102 +1,124 @@
 // src/pages/DeveloperDashboard/Payouts.tsx
-import { useEffect, useState } from 'react'
+// Request a payout per project and see every payout ever made. The minimum and
+// whether payouts are on hold come from the platform state in the overview.
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { platformService } from '../../services/platformService'
 import toast from 'react-hot-toast'
-import { PageTitle, Loading, EmptyState, ConfirmDialog, fmtUsd } from './shared'
+import { platformService, type Payout, type PlatformNotice, type Project } from '../../services/platformService'
+import { PageTitle, Loading, EmptyState, ConfirmDialog, AlertItem, Section, KpiTile, StatusBadge, DataTable, shortAddr, fmtUsd, type Column } from './shared'
+import { fullDate } from './format'
+import { TxLink } from './components/cells'
 
-const MIN_PAYOUT = 50
+// A payout row with the chain it settles on, so its tx can link to the right explorer.
+type PayoutRow = Payout & { chain?: string }
 
-// Collect any payout records the API exposes on projects or analytics.
-function collectPayouts(projects: any[], analytics: any): any[] {
-  const out: any[] = []
-  for (const p of projects) {
-    const rows = p.payouts || p.payout_history || []
-    if (Array.isArray(rows)) rows.forEach(r => out.push({ ...r, project: p.name }))
-  }
-  const anRows = analytics?.payouts || analytics?.payout_history || []
-  if (Array.isArray(anRows)) anRows.forEach((r: any) => out.push(r))
-  return out.sort((a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime())
-}
+const COLUMNS: Column<PayoutRow>[] = [
+  { key: 'date', header: 'Requested', className: 'f-mono whitespace-nowrap', render: r => fullDate(r.created_at) },
+  { key: 'project', header: 'Project', render: r => <span className="text-[color:var(--ink)]">{r.project_name || '-'}</span> },
+  { key: 'amount', header: 'Amount', align: 'right', className: 'f-mono', render: r => fmtUsd(r.amount) },
+  { key: 'wallet', header: 'Wallet', className: 'f-mono', render: r => <span title={r.wallet_address}>{shortAddr(r.wallet_address)}</span> },
+  { key: 'status', header: 'Status', render: r => <StatusBadge status={r.status} /> },
+  { key: 'tx', header: 'Transaction', render: r => <TxLink chain={r.chain} hash={r.tx_hash} /> },
+  { key: 'notes', header: 'Notes', className: 'text-[0.78rem] text-[color:var(--ink-3)]', render: r => r.notes || '-' },
+]
 
 export default function Payouts() {
-  const [projects, setProjects] = useState<any[]>([])
-  const [history, setHistory] = useState<any[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [payouts, setPayouts] = useState<Payout[]>([])
+  const [platform, setPlatform] = useState<PlatformNotice | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
-  const [confirmPayout, setConfirmPayout] = useState<any | null>(null)
+  const [confirm, setConfirm] = useState<Project | null>(null)
 
-  const load = () =>
-    Promise.all([
-      platformService.listProjects().catch(() => []),
-      platformService.getAnalytics().catch(() => null),
-    ]).then(([ps, an]) => {
-      setProjects(ps || [])
-      setHistory(collectPayouts(ps || [], an))
-      setLoading(false)
-    })
-  useEffect(() => { load() }, [])
+  const load = useCallback(async () => {
+    const [ps, list, overview] = await Promise.all([
+      platformService.listProjects().catch((e: Error) => {
+        toast.error(e?.message || 'Could not load your projects')
+        return [] as Project[]
+      }),
+      platformService.listPayouts().catch((e: Error) => {
+        toast.error(e?.message || 'Could not load payout history')
+        return [] as Payout[]
+      }),
+      platformService.getOverview(7).catch(() => null),
+    ])
+    setProjects(ps)
+    setPayouts(list)
+    setPlatform(overview?.platform || null)
+    setLoading(false)
+  }, [])
 
-  const request = async (p: any) => {
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const request = async (p: Project) => {
     setBusy(true)
     try {
       await platformService.requestPayout(p.id)
-      setConfirmPayout(null)
+      setConfirm(null)
       await load()
       toast.success('Payout requested')
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to request payout')
+      toast.error(e?.message || 'Could not request the payout')
     } finally {
       setBusy(false)
     }
   }
 
+  const frozen = !!platform?.payouts_frozen
+  const minimum = platform?.minimum_payout_usd ?? null
   const totalPending = projects.reduce((s, p) => s + (p.pending_balance || 0), 0)
+  const paidOut = payouts.filter(r => r.status === 'completed').reduce((s, r) => s + (r.amount || 0), 0)
+  const inFlight = payouts.filter(r => r.status === 'pending' || r.status === 'processing')
+  // Rows carry the project's payout chain so the tx can link to its explorer.
+  const rows = payouts.map(r => ({ ...r, chain: projects.find(p => p.id === r.project_id)?.payout_chain }))
 
   if (loading) return <><PageTitle title="Payouts" /><Loading /></>
 
   return (
     <div>
-      <PageTitle title="Payouts" subtitle={`Withdraw earnings once a project reaches ${fmtUsd(MIN_PAYOUT, 0)}.`} />
+      <PageTitle title="Payouts" subtitle={minimum != null ? `Withdraw earnings once a project reaches ${fmtUsd(minimum, 0)}.` : 'Withdraw earnings per project to the wallet set in Fee-share.'} />
 
-      <div className="dash-card mb-6">
-        <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-1">Total Pending</div>
-        <div className="font-display text-3xl font-bold text-almost-white tracking-tighter">{fmtUsd(totalPending)}</div>
-        <p className="text-xs text-light-grey-1 mt-2">
-          Payouts are settled per project to the wallet set in Fee-share. Minimum {fmtUsd(MIN_PAYOUT, 0)} per project.
-        </p>
+      {frozen && (
+        <div className="mb-6">
+          <AlertItem level="warning" title="Payouts are on hold" detail="Swipass has paused payouts for now. Your balance is safe and keeps accruing; you can request it as soon as they resume." />
+        </div>
+      )}
+
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 sm:gap-4">
+        <KpiTile label="Pending balance" value={fmtUsd(totalPending)} hint="Across all projects" />
+        <KpiTile label="In flight" value={fmtUsd(inFlight.reduce((s, r) => s + (r.amount || 0), 0))} hint={`${inFlight.length} payout${inFlight.length === 1 ? '' : 's'} being processed`} />
+        <KpiTile label="Paid out" value={fmtUsd(paidOut)} hint="Completed payouts" />
       </div>
 
-      <div className="mb-8">
-        <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-3">Request a Payout</div>
+      <Section title="Request a payout" subtitle="Settled per project to the wallet set in Fee-share." className="mb-6">
         {projects.length === 0 ? (
-          <EmptyState title="No projects" hint="Create a project to start earning." />
+          <p className="py-6 text-center text-[0.84rem] text-[color:var(--ink-4)]">No projects yet. Create one to start earning.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="flex flex-col divide-y divide-white/[0.06]">
             {projects.map(p => {
               const pending = p.pending_balance || 0
               const hasWallet = !!p.payout_wallet
-              const eligible = pending >= MIN_PAYOUT && hasWallet
+              const belowMin = minimum != null && pending < minimum
+              const eligible = hasWallet && pending > 0 && !belowMin && !frozen
               return (
-                <div key={p.id} className="dash-card flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div key={p.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <div className="font-display text-base font-semibold text-almost-white">{p.name}</div>
-                    <div className="text-xs text-light-grey-1 mt-0.5">Pending {fmtUsd(pending)}</div>
+                    <div className="text-[0.95rem] text-[color:var(--ink)]">{p.name}</div>
+                    <div className="f-mono mt-0.5 text-[0.76rem] text-[color:var(--ink-4)]">
+                      Pending {fmtUsd(pending)}
+                      {hasWallet && <span className="ml-3">to {shortAddr(p.payout_wallet)}</span>}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     {!hasWallet && (
-                      <Link to="/dashboard/developer/fee-share" className="text-xs text-light-grey-1 hover:text-light-grey-3 underline">
+                      <Link to="/dashboard/developer/fee-share" className="text-[0.78rem] text-[color:var(--ink-3)] underline decoration-white/20 underline-offset-2 hover:text-[color:var(--ink)]">
                         Set payout wallet
                       </Link>
                     )}
-                    {hasWallet && !eligible && (
-                      <span className="text-xs text-light-grey-1">Needs {fmtUsd(MIN_PAYOUT - pending)} more</span>
-                    )}
-                    <button
-                      onClick={() => setConfirmPayout(p)}
-                      disabled={!eligible}
-                      className="sw-btn sw-btn-primary text-xs py-1.5 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
+                    {hasWallet && belowMin && <span className="text-[0.78rem] text-[color:var(--ink-4)]">Needs {fmtUsd((minimum as number) - pending)} more</span>}
+                    <button type="button" onClick={() => setConfirm(p)} disabled={!eligible || busy} className="pill pill-light h-9 disabled:cursor-not-allowed disabled:opacity-40">
                       Withdraw {fmtUsd(pending)}
                     </button>
                   </div>
@@ -105,50 +127,30 @@ export default function Payouts() {
             })}
           </div>
         )}
-      </div>
+      </Section>
 
-      <div>
-        <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-3">History</div>
-        {history.length === 0 ? (
-          <EmptyState title="No payouts yet" hint="Your withdrawal history will appear here once you request a payout." />
-        ) : (
-          <div className="border border-dark-grey-3 rounded-lg overflow-hidden overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-dark-grey-2 text-light-grey-1 text-xs uppercase tracking-wider">
-                <tr>
-                  <th className="p-3 text-left">Date</th>
-                  <th className="p-3 text-left">Project</th>
-                  <th className="p-3 text-left">Amount</th>
-                  <th className="p-3 text-left">Wallet</th>
-                  <th className="p-3 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((r, i) => (
-                  <tr key={r.id || i} className="border-b border-dark-grey-3 hover:bg-dark-grey-2">
-                    <td className="p-3 text-light-grey-1">{r.created_at || r.date ? new Date(r.created_at || r.date).toLocaleDateString() : '-'}</td>
-                    <td className="p-3 text-light-grey-3">{r.project || '-'}</td>
-                    <td className="p-3 text-light-grey-2">{fmtUsd(r.amount_usd ?? r.amount)}</td>
-                    <td className="p-3"><code className="text-xs text-light-grey-1">{r.wallet || r.payout_wallet ? `${String(r.wallet || r.payout_wallet).slice(0, 10)}...` : '-'}</code></td>
-                    <td className="p-3 text-light-grey-1 uppercase tracking-wider text-xs">{r.status || 'pending'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <Section title="History" subtitle="Every payout requested, newest first.">
+        <DataTable
+          columns={COLUMNS}
+          rows={rows}
+          rowKey={r => r.id}
+          empty={<p className="py-6 text-center text-[0.84rem] text-[color:var(--ink-4)]">No payouts yet. Your first request lists here with its status and transaction.</p>}
+        />
+      </Section>
 
       <ConfirmDialog
-        open={!!confirmPayout}
+        open={!!confirm}
         title="Request payout"
         message={
-          <>Withdraw <b className="text-light-grey-3">{fmtUsd(confirmPayout?.pending_balance)}</b> from <b className="text-light-grey-3">{confirmPayout?.name}</b> to your configured payout wallet?</>
+          <>
+            Withdraw <b className="text-[color:var(--ink)]">{fmtUsd(confirm?.pending_balance)}</b> from <b className="text-[color:var(--ink)]">{confirm?.name}</b> to{' '}
+            <span className="f-mono text-[color:var(--ink)]">{shortAddr(confirm?.payout_wallet)}</span> in {confirm?.payout_token || 'USDC'} on {confirm?.payout_chain || 'base'}?
+          </>
         }
-        confirmLabel="Request Payout"
+        confirmLabel="Request payout"
         busy={busy}
-        onConfirm={() => request(confirmPayout)}
-        onCancel={() => setConfirmPayout(null)}
+        onConfirm={() => confirm && request(confirm)}
+        onCancel={() => setConfirm(null)}
       />
     </div>
   )

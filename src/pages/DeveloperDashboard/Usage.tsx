@@ -1,173 +1,127 @@
 // src/pages/DeveloperDashboard/Usage.tsx
+// One project over a window: requests, volume and fees per day, and where
+// they went (provider, route, token, outcome). All from the usage endpoint.
 import { useEffect, useMemo, useState } from 'react'
-import {
-  ResponsiveContainer, AreaChart, Area, BarChart, Bar, LineChart, Line,
-  XAxis, YAxis, CartesianGrid, Tooltip,
-} from 'recharts'
-import { platformService } from '../../services/platformService'
-import { PageTitle, StatTile, Loading, EmptyState, CHART, ChartTooltip, fmtUsd, fmtNum } from './shared'
+import toast from 'react-hot-toast'
+import { platformService, type ProjectUsage } from '../../services/platformService'
+import { PageTitle, Loading, EmptyState, Segmented, PERIODS, KpiTile, Section, TimeSeries, BreakdownBars, fmtUsd, fmtNum, pct } from './shared'
+import { routeLabel } from './format'
+import { useProjects, useProjectParam } from './useProjects'
+import { ProjectSelect } from './components/ProjectSelect'
 
-// Pull a time series out of whatever shape the endpoint returns.
-function normalizeSeries(raw: any): any[] {
-  if (!raw) return []
-  const arr =
-    (Array.isArray(raw) && raw) ||
-    raw.daily || raw.usage || raw.series || raw.data || raw.points ||
-    raw.requests_over_time || raw.timeline || []
-  if (!Array.isArray(arr)) return []
-  return arr.map((p: any) => ({
-    label: String(p.date || p.day || p.label || p.timestamp || '').slice(5, 10) || '',
-    requests: Number(p.requests ?? p.count ?? p.request_count ?? p.total ?? 0),
-    volume: Number(p.volume_usd ?? p.volume ?? 0),
-    success: Number(p.success_rate ?? p.success ?? 0),
-  }))
-}
-
-const DAY_OPTIONS = [7, 30, 90]
+const usd = (n: number) => fmtUsd(n, 0)
 
 export default function Usage() {
-  const [projects, setProjects] = useState<any[]>([])
-  const [projectId, setProjectId] = useState<string>('')
+  const { projects, loading: loadingProjects } = useProjects()
+  const [projectId, setProjectId] = useProjectParam(projects)
   const [days, setDays] = useState(30)
-  const [usage, setUsage] = useState<any>(null)
-  const [analytics, setAnalytics] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [usage, setUsage] = useState<ProjectUsage | null>(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    Promise.all([
-      platformService.listProjects().catch(() => []),
-      platformService.getAnalytics().catch(() => null),
-    ]).then(([ps, an]) => {
-      setProjects(ps || [])
-      if (ps && ps[0]) setProjectId(ps[0].id)
-      setAnalytics(an)
-      setLoading(false)
-    })
-  }, [])
-
-  useEffect(() => {
-    if (!projectId) { setUsage(null); return }
-    platformService.getUsage(projectId, days).then(setUsage).catch(() => setUsage(null))
+    if (!projectId) return
+    let cancelled = false
+    setLoading(true)
+    platformService
+      .getUsage(projectId, days)
+      .then(u => !cancelled && setUsage(u))
+      .catch((e: Error) => {
+        if (cancelled) return
+        setUsage(null)
+        toast.error(e?.message || 'Could not load usage')
+      })
+      .finally(() => !cancelled && setLoading(false))
+    return () => {
+      cancelled = true
+    }
   }, [projectId, days])
 
-  const series = useMemo(() => normalizeSeries(usage), [usage])
-  const hasSeries = series.some(p => p.requests > 0 || p.volume > 0)
+  const daily = usage?.daily || []
+  const totals = useMemo(() => {
+    const requests = daily.reduce((s, d) => s + d.requests, 0)
+    const completed = daily.reduce((s, d) => s + d.completed, 0)
+    return { requests, completed, rate: requests ? completed / requests : null }
+  }, [daily])
+  const active = daily.some(d => d.requests > 0)
 
-  const totalReq = series.reduce((s, p) => s + p.requests, 0)
-  const totalVol = series.reduce((s, p) => s + p.volume, 0)
-  const avgSuccess = series.length
-    ? series.reduce((s, p) => s + p.success, 0) / series.filter(p => p.success > 0).length || 0
-    : 0
+  const providers = (usage?.by_provider || []).map(r => ({ label: r.provider, value: r.requests, sub: usd(r.volume_usd) }))
+  const routes = (usage?.by_route || []).map(r => ({ label: routeLabel(r.from_chain, r.to_chain), value: r.requests, sub: usd(r.volume_usd) }))
+  const tokens = (usage?.by_token || []).map(r => ({ label: r.token, value: r.requests, sub: usd(r.volume_usd) }))
+  const statuses = Object.entries(usage?.by_status || {})
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
 
-  // Aggregate analytics fallbacks (dev-wide).
-  const anTotalReq = analytics?.total_requests ?? analytics?.requests ?? totalReq
-  const anVolume = analytics?.total_volume_usd ?? analytics?.volume_usd ?? totalVol
-  const anSuccess = analytics?.success_rate ?? (avgSuccess || 0)
+  const header = (
+    <PageTitle
+      title="Usage & Analytics"
+      subtitle="Requests, volume and fees for one project over time."
+      right={
+        projects.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <ProjectSelect projects={projects} value={projectId} onChange={setProjectId} />
+            <Segmented value={days} options={PERIODS} onChange={setDays} label="Period" />
+          </div>
+        ) : undefined
+      }
+    />
+  )
 
-  if (loading) return <><PageTitle title="Usage & Analytics" /><Loading /></>
-
+  if (loadingProjects) return <>{header}<Loading /></>
   if (projects.length === 0) {
     return (
-      <div>
-        <PageTitle title="Usage & Analytics" />
+      <>
+        {header}
         <EmptyState title="No data to chart yet" hint="Create a project and start sending intents to see requests, volume and success rate here." />
-      </div>
+      </>
+    )
+  }
+  if (loading && !usage) return <>{header}<Loading /></>
+  if (!usage) {
+    return (
+      <>
+        {header}
+        <EmptyState title="Usage could not be loaded" hint="The API did not answer. Try again in a moment." />
+      </>
     )
   }
 
   return (
     <div>
-      <PageTitle
-        title="Usage & Analytics"
-        subtitle="Requests, volume and success rate over time."
-        right={
-          <div className="flex items-center gap-2">
-            <select
-              value={projectId}
-              onChange={e => setProjectId(e.target.value)}
-              className="bg-dark-grey-2 border border-mid-grey rounded px-2 py-1.5 text-xs text-light-grey-2 font-mono focus:outline-none focus:border-light-grey-1"
-            >
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <div className="flex border border-mid-grey rounded overflow-hidden">
-              {DAY_OPTIONS.map(d => (
-                <button
-                  key={d}
-                  onClick={() => setDays(d)}
-                  className={`text-xs px-2.5 py-1.5 font-mono ${days === d ? 'bg-dark-grey-3 text-almost-white' : 'text-light-grey-1 hover:bg-dark-grey-2'}`}
-                >
-                  {d}d
-                </button>
-              ))}
-            </div>
-          </div>
-        }
-      />
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatTile label="Total Requests" value={fmtNum(anTotalReq)} hint={`Last ${days} days`} />
-        <StatTile label="Volume" value={fmtUsd(anVolume, 0)} hint={`Last ${days} days`} />
-        <StatTile label="Success Rate" value={`${(anSuccess <= 1 ? anSuccess * 100 : anSuccess).toFixed(1)}%`} />
+      {header}
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 sm:gap-4">
+        <KpiTile label="Requests" value={fmtNum(usage.total_requests)} hint={`Last ${usage.period_days} days`} />
+        <KpiTile label="Volume" value={fmtUsd(usage.total_volume_usd, 0)} />
+        <KpiTile label="Fees" value={fmtUsd(usage.total_fees_usd)} hint="Before your share is applied" />
+        <KpiTile label="Success rate" value={totals.rate == null ? '-' : pct(totals.rate)} hint={totals.rate == null ? 'No requests in this window' : `${fmtNum(totals.completed)} of ${fmtNum(totals.requests)} completed`} />
       </div>
 
-      {!hasSeries ? (
-        <EmptyState title="No usage in this window" hint="Once this project processes intents, requests and volume will chart here." />
+      {!active ? (
+        <EmptyState title="No usage in this window" hint="Once this project processes intents, requests and volume chart here." />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ChartCard title="Requests over time">
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={series} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="reqFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART.fill} stopOpacity={0.35} />
-                    <stop offset="100%" stopColor={CHART.fill} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke={CHART.grid} vertical={false} />
-                <XAxis dataKey="label" stroke={CHART.axis} tick={{ fontSize: 10 }} />
-                <YAxis stroke={CHART.axis} tick={{ fontSize: 10 }} width={36} />
-                <Tooltip content={<ChartTooltip />} />
-                <Area type="monotone" dataKey="requests" name="Requests" stroke={CHART.series[0]} fill="url(#reqFill)" strokeWidth={1.5} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Volume over time">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={series} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                <CartesianGrid stroke={CHART.grid} vertical={false} />
-                <XAxis dataKey="label" stroke={CHART.axis} tick={{ fontSize: 10 }} />
-                <YAxis stroke={CHART.axis} tick={{ fontSize: 10 }} width={36} />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: '#1a1a1a' }} />
-                <Bar dataKey="volume" name="Volume USD" fill={CHART.series[1]} radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          {series.some(p => p.success > 0) && (
-            <ChartCard title="Success rate">
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={series} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                  <CartesianGrid stroke={CHART.grid} vertical={false} />
-                  <XAxis dataKey="label" stroke={CHART.axis} tick={{ fontSize: 10 }} />
-                  <YAxis stroke={CHART.axis} tick={{ fontSize: 10 }} width={36} domain={[0, 100]} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Line type="monotone" dataKey="success" name="Success %" stroke={CHART.series[0]} strokeWidth={1.5} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartCard>
-          )}
+        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Section title="Requests per day" subtitle="Completed and failed, stacked.">
+            <TimeSeries data={daily} type="bar" series={[{ key: 'completed', name: 'Completed' }, { key: 'failed', name: 'Failed' }]} />
+          </Section>
+          <Section title="Volume per day" subtitle="USD routed through this project.">
+            <TimeSeries data={daily} series={[{ key: 'volume_usd', name: 'Volume' }]} money />
+          </Section>
         </div>
       )}
-    </div>
-  )
-}
 
-function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="dash-card">
-      <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-4">{title}</div>
-      {children}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Section title="By provider" subtitle="Requests, with volume routed.">
+          <BreakdownBars rows={providers} />
+        </Section>
+        <Section title="By route" subtitle="Source to destination chain.">
+          <BreakdownBars rows={routes} />
+        </Section>
+        <Section title="By token" subtitle="What users started from.">
+          <BreakdownBars rows={tokens} />
+        </Section>
+        <Section title="By outcome" subtitle="Where each request ended.">
+          <BreakdownBars rows={statuses} />
+        </Section>
+      </div>
     </div>
   )
 }

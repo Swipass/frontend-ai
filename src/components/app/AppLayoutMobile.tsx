@@ -10,6 +10,7 @@ import { ConfirmButton } from './ConfirmButton'
 import { BottomSheet } from './BottomSheet'
 import { Wordmark } from '../Logo'
 import { StatsRow } from './StatsRow'
+import { StatusBanner } from './StatusBanner'
 import { Icon, PulseDot } from './shared'
 
 interface AppLayoutMobileProps {
@@ -95,6 +96,7 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
         </div>
 
         <div className="relative z-[1] px-4 pb-32 pt-7">
+          <StatusBanner className="mb-5" />
           {mobileTab === 'command' && (
             <>
               {idle && (
