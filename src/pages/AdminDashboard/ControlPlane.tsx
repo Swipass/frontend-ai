@@ -3,20 +3,30 @@
 // blacklist, routing and fee tunables, and the global emergency pause, all
 // without a redeploy.
 import { useEffect, useState } from 'react'
-import { adminService } from '../../services/platformService'
+import { Link } from 'react-router-dom'
+import { adminService, type ManagedCredential } from '../../services/adminService'
 import toast from 'react-hot-toast'
 import { PageTitle, Loading, EmptyState, Toggle, ConfirmDialog, inputCls } from './shared'
 
+const GROUP_LABELS: Record<string, string> = {
+  providers: 'Provider keys',
+  llm: 'Intent parsing',
+  oauth: 'Sign-in (OAuth)',
+  fees: 'Fees',
+  data: 'Data and RPC',
+}
+const GROUP_ORDER = ['providers', 'data', 'llm', 'oauth', 'fees']
+
 /* ---------------------------------- Credentials --------------------------- */
 function Credentials() {
-  const [creds, setCreds] = useState<any[]>([])
+  const [creds, setCreds] = useState<ManagedCredential[]>([])
   const [loading, setLoading] = useState(true)
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const load = () =>
-    adminService.listCredentials().then(d => setCreds(d.credentials || d.items || d || [])).catch(() => setCreds([])).finally(() => setLoading(false))
+    adminService.listCredentials().then(d => setCreds(d.credentials || [])).catch(() => setCreds([])).finally(() => setLoading(false))
   useEffect(() => { load() }, [])
 
   const save = async (name: string) => {
@@ -51,6 +61,8 @@ function Credentials() {
 
   if (loading) return <Loading />
 
+  const groups = GROUP_ORDER.map(key => ({ key, items: creds.filter(c => (c.group || 'providers') === key) })).filter(g => g.items.length > 0)
+
   return (
     <div>
       <p className="text-xs text-light-grey-1 mb-4 leading-relaxed">
@@ -59,49 +71,57 @@ function Credentials() {
       {creds.length === 0 ? (
         <EmptyState title="No managed credentials" hint="No credential slots are registered." />
       ) : (
-        <div className="space-y-3">
-          {creds.map(c => {
-            const name = c.name || c.key
-            const isSet = c.is_set ?? c.set ?? !!c.masked
-            return (
-              <div key={name} className="border border-dark-grey-3 rounded-lg p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                  <div>
-                    <div className="font-mono text-sm text-light-grey-3">{name}</div>
-                    <div className="flex items-center gap-2 text-xs text-light-grey-1 mt-1">
-                      <span className={`w-1.5 h-1.5 rounded-full ${isSet ? 'bg-light-grey-2' : 'bg-mid-grey'}`} />
-                      {isSet ? `Set${c.masked ? ` · ${c.masked}` : ''}` : 'Not set'}
-                      {c.source && <span className="uppercase tracking-wider">· {c.source}</span>}
+        <div className="space-y-6">
+          {groups.map(g => (
+            <div key={g.key}>
+              <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-3">{GROUP_LABELS[g.key] || g.key}</div>
+              <div className="space-y-3">
+                {g.items.map(c => {
+                  const name = c.name
+                  const isSet = c.is_set
+                  return (
+                    <div key={name} className="border border-dark-grey-3 rounded-lg p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                        <div>
+                          <div className="text-sm text-light-grey-3">{c.label || name}</div>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-light-grey-1 mt-1">
+                            <span className="font-mono">{name}</span>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isSet ? 'bg-light-grey-2' : 'bg-mid-grey'}`} />
+                            {isSet ? `Set${c.masked ? ` · ${c.masked}` : ''}` : 'Not set'}
+                            {c.source && <span className="uppercase tracking-wider">· {c.source}</span>}
+                          </div>
+                        </div>
+                        {isSet && (
+                          <button
+                            onClick={() => setConfirmDel(name)}
+                            className="text-xs border border-mid-grey rounded px-2 py-1 text-light-grey-1 hover:bg-dark-grey-3 transition self-start"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="password"
+                          value={drafts[name] || ''}
+                          onChange={e => setDrafts(d => ({ ...d, [name]: e.target.value }))}
+                          placeholder={isSet ? 'Enter new value to rotate' : 'Enter value'}
+                          className={inputCls}
+                        />
+                        <button
+                          onClick={() => save(name)}
+                          disabled={busy || !(drafts[name] || '').trim()}
+                          className="sw-btn sw-btn-primary text-xs py-2 px-4 disabled:opacity-40 whitespace-nowrap"
+                        >
+                          Save
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  {isSet && (
-                    <button
-                      onClick={() => setConfirmDel(name)}
-                      className="text-xs border border-mid-grey rounded px-2 py-1 text-light-grey-1 hover:bg-dark-grey-3 transition self-start"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="password"
-                    value={drafts[name] || ''}
-                    onChange={e => setDrafts(d => ({ ...d, [name]: e.target.value }))}
-                    placeholder={isSet ? 'Enter new value to rotate' : 'Enter value'}
-                    className={inputCls}
-                  />
-                  <button
-                    onClick={() => save(name)}
-                    disabled={busy || !(drafts[name] || '').trim()}
-                    className="sw-btn sw-btn-primary text-xs py-2 px-4 disabled:opacity-40 whitespace-nowrap"
-                  >
-                    Save
-                  </button>
-                </div>
+                  )
+                })}
               </div>
-            )
-          })}
+            </div>
+          ))}
         </div>
       )}
 
@@ -269,70 +289,6 @@ function Blacklist() {
   )
 }
 
-/* ------------------------------------ System ------------------------------ */
-function SystemControls() {
-  const [paused, setPaused] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [busy, setBusy] = useState(false)
-  const [confirmPause, setConfirmPause] = useState(false)
-
-  useEffect(() => {
-    adminService.getOverview().then(d => setPaused(!!d.system_paused)).catch(() => {}).finally(() => setLoading(false))
-  }, [])
-
-  const doToggle = async () => {
-    setBusy(true)
-    try {
-      await adminService.pauseSystem(!paused)
-      setPaused(!paused)
-      setConfirmPause(false)
-      toast.success(paused ? 'System resumed' : 'System paused')
-    } catch (e: any) {
-      toast.error(e?.message || 'Failed to change system state')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (loading) return <Loading />
-
-  return (
-    <div className="border border-dark-grey-3 rounded-lg p-5">
-      <div className="font-display text-base font-semibold text-almost-white mb-2">Global Circuit Breaker</div>
-      <p className="text-sm text-light-grey-1 leading-relaxed mb-4">
-        When paused, every /v1/intent request is rejected with 503. Use this only for emergency maintenance.
-      </p>
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-dark-grey-3 rounded">
-          <span className={`w-2 h-2 rounded-full ${paused ? 'bg-mid-grey' : 'bg-light-grey-2 animate-pulse'}`} />
-          <span className="text-xs uppercase tracking-wider text-light-grey-1">System {paused ? 'Paused' : 'Live'}</span>
-        </div>
-        <button
-          onClick={() => (paused ? doToggle() : setConfirmPause(true))}
-          disabled={busy}
-          className={
-            paused
-              ? 'sw-btn sw-btn-primary text-xs py-1.5 px-4'
-              : 'text-xs uppercase tracking-wider py-1.5 px-4 rounded border border-mid-grey text-almost-white hover:bg-dark-grey-3 transition'
-          }
-        >
-          {busy ? '...' : paused ? 'Resume System' : 'Pause System'}
-        </button>
-      </div>
-
-      <ConfirmDialog
-        open={confirmPause}
-        title="Pause the platform"
-        message="This immediately rejects all intent requests platform-wide until you resume. Continue?"
-        confirmLabel="Pause System"
-        busy={busy}
-        onConfirm={doToggle}
-        onCancel={() => setConfirmPause(false)}
-      />
-    </div>
-  )
-}
-
 /* ----------------------------------- Tunables ----------------------------- */
 // The knobs that decide how routing behaves and what the platform charges.
 // Values outside their bounds are clamped by the backend rather than rejected,
@@ -468,14 +424,21 @@ const TABS = [
   { key: 'chains', label: 'Chains' },
   { key: 'blacklist', label: 'Blacklist' },
   { key: 'tunables', label: 'Routing & Fees' },
-  { key: 'system', label: 'System' },
 ]
 
 export default function ControlPlane() {
   const [tab, setTab] = useState('credentials')
   return (
     <div>
-      <PageTitle title="Control Plane" subtitle="Runtime configuration. Manage keys, chains and safety controls without a redeploy." />
+      <PageTitle
+        title="Control Plane"
+        subtitle="Runtime configuration. Manage keys, chains and safety controls without a redeploy."
+        right={
+          <Link to="/dashboard/admin/emergency" className="pill pill-dark h-9">
+            Emergency switches →
+          </Link>
+        }
+      />
 
       <div className="flex flex-wrap gap-2 mb-6 border-b border-dark-grey-3">
         {TABS.map(t => (
@@ -495,7 +458,6 @@ export default function ControlPlane() {
       {tab === 'chains' && <Chains />}
       {tab === 'blacklist' && <Blacklist />}
       {tab === 'tunables' && <Tunables />}
-      {tab === 'system' && <SystemControls />}
     </div>
   )
 }

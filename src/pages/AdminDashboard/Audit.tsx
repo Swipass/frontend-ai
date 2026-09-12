@@ -1,54 +1,81 @@
 // src/pages/AdminDashboard/Audit.tsx
-import { useEffect, useState } from 'react'
-import { adminService } from '../../services/platformService'
-import { PageTitle, Loading, EmptyState } from './shared'
+// The immutable record of every admin action: who did what, to what, and why
+// (the reason lands in `detail` for actions that take one).
+import { useCallback, useState } from 'react'
+import { adminService, type AuditEntry } from '../../services/adminService'
+import { PageTitle, Loading, EmptyState, Section, Modal, DataTable, Pager, DetailRow, SearchInput, type Column } from './shared'
+import { useLoad } from './hooks'
+import { FilterBar, JsonBlock } from './components/Controls'
+import { fullDate } from './format'
+
+const PAGE_SIZE = 100
 
 export default function Audit() {
-  const [rows, setRows] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [offset, setOffset] = useState(0)
+  const [actor, setActor] = useState('')
+  const [action, setAction] = useState('')
+  const [selected, setSelected] = useState<AuditEntry | null>(null)
 
-  useEffect(() => {
-    adminService
-      .listAudit(200)
-      .then(d => setRows(d.audit || d.entries || d.logs || d.items || d || []))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false))
-  }, [])
+  const fetcher = useCallback(
+    () => adminService.searchAudit({ limit: PAGE_SIZE, offset, actor: actor || undefined, action: action || undefined }),
+    [offset, actor, action],
+  )
+  const { data, loading, error } = useLoad(fetcher, 'Could not load the audit log')
+
+  const rows = data?.audit || []
+  const total = data?.total ?? null
+
+  const resetAndSet = (setter: (v: string) => void) => (v: string) => {
+    setOffset(0)
+    setter(v)
+  }
+
+  const COLUMNS: Column<AuditEntry>[] = [
+    { key: 'created_at', header: 'Time', render: r => <span className="whitespace-nowrap text-[color:var(--ink-4)]">{fullDate(r.created_at)}</span> },
+    { key: 'actor', header: 'Actor', render: r => <span className="break-all text-[color:var(--ink-2)]">{r.actor || 'system'}</span> },
+    { key: 'action', header: 'Action', render: r => <span className="f-mono text-[0.78rem] text-[color:var(--ink)]">{r.action}</span> },
+    { key: 'target', header: 'Target', render: r => <span className="break-all text-[color:var(--ink-3)]">{r.target || '-'}</span> },
+  ]
+
+  if (loading && !data) return <><PageTitle title="Audit" /><Loading /></>
 
   return (
     <div>
-      <PageTitle title="Audit Log" subtitle="Administrative actions across the platform." />
+      <PageTitle title="Audit" subtitle={total != null ? `${total.toLocaleString()} recorded actions` : undefined} />
 
-      {loading ? (
-        <Loading />
-      ) : rows.length === 0 ? (
-        <EmptyState title="No audit entries" hint="Admin actions will be recorded here." />
+      <FilterBar>
+        <SearchInput value={actor} onChange={resetAndSet(setActor)} placeholder="Actor (user id or email)" className="w-64" />
+        <input
+          value={action}
+          onChange={e => resetAndSet(setAction)(e.target.value)}
+          placeholder="Action prefix, e.g. emergency"
+          className="h-9 w-56 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 text-xs text-[color:var(--ink-2)] outline-none focus:border-white/30"
+        />
+      </FilterBar>
+
+      {rows.length === 0 ? (
+        <EmptyState title="No audit entries" hint={error || 'Admin actions will be recorded here as they happen.'} />
       ) : (
-        <div className="border border-dark-grey-3 rounded-lg overflow-hidden overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-dark-grey-2 text-light-grey-1 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="p-3 text-left">Time</th>
-                <th className="p-3 text-left">Actor</th>
-                <th className="p-3 text-left">Action</th>
-                <th className="p-3 text-left">Target</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={r.id || i} className="border-b border-dark-grey-3 hover:bg-dark-grey-2">
-                  <td className="p-3 text-light-grey-1 whitespace-nowrap">
-                    {r.created_at || r.timestamp || r.time ? new Date(r.created_at || r.timestamp || r.time).toLocaleString() : '-'}
-                  </td>
-                  <td className="p-3 text-light-grey-3 break-all">{r.actor || r.actor_email || r.user_email || r.user_id || '-'}</td>
-                  <td className="p-3 text-light-grey-2 uppercase tracking-wider text-xs">{r.action || r.event || '-'}</td>
-                  <td className="p-3 text-light-grey-1 break-all">{r.target || r.target_id || r.resource || r.details || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Section title="Actions" subtitle="Click a row for the full recorded detail.">
+          <DataTable columns={COLUMNS} rows={rows} rowKey={(r, i) => String(r.id ?? i)} onRowClick={setSelected} />
+          <Pager offset={offset} limit={PAGE_SIZE} total={total} count={rows.length} onChange={setOffset} />
+        </Section>
       )}
+
+      <Modal open={!!selected} title="Audit entry" onClose={() => setSelected(null)}>
+        {selected && (
+          <div className="flex flex-col gap-3">
+            <DetailRow label="Time">{fullDate(selected.created_at)}</DetailRow>
+            <DetailRow label="Actor">{selected.actor || 'system'}</DetailRow>
+            <DetailRow label="Action">{selected.action}</DetailRow>
+            <DetailRow label="Target">{selected.target || '-'}</DetailRow>
+            <div>
+              <div className="kicker mb-2">Detail</div>
+              <JsonBlock value={selected.detail ?? {}} />
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

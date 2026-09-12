@@ -1,115 +1,94 @@
 // src/pages/AdminDashboard/Analytics.tsx
-import { useEffect, useMemo, useState } from 'react'
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
-import { adminService } from '../../services/platformService'
-import { PageTitle, StatTile, Loading, EmptyState, CHART, ChartTooltip, fmtUsd, fmtNum, pct } from './shared'
+// Platform-wide analytics: the funnel from intent to settlement, provider
+// quality (success rate and truth return), and volume by route.
+import { useCallback, useState } from 'react'
+import { adminService } from '../../services/adminService'
+import {
+  PageTitle, Loading, EmptyState, Section, Segmented, PERIODS, KpiTile, DataTable,
+  BreakdownBars, fmtNum, fmtUsd, pct, type Column,
+} from './shared'
+import { useLoad } from './hooks'
+import { routeLabel } from './format'
 
-function asArray(v: any): any[] {
-  return Array.isArray(v) ? v : []
+interface ProviderRow {
+  provider: string
+  count: number
+  success_rate: number
+  avg_truth_return_bps: number
+  window_days: number
 }
 
 export default function Analytics() {
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [days, setDays] = useState(30)
+  const fetcher = useCallback(
+    () => Promise.all([adminService.getAnalytics(), adminService.getDashboard(days)]),
+    [days],
+  )
+  const { data, loading, error } = useLoad(fetcher, 'Could not load analytics')
 
-  useEffect(() => {
-    adminService.getAnalytics().then(setData).catch(() => setData(null)).finally(() => setLoading(false))
-  }, [])
+  const period = <Segmented value={days} options={PERIODS} onChange={setDays} label="Period" />
 
-  const providers = useMemo(() => {
-    const rows = asArray(data?.providers || data?.provider_stats)
-    return rows.map((p: any) => ({
-      name: p.provider || p.name || p.display_name || '?',
-      success: Number(p.success_rate ?? p.success ?? 0),
-      truth: Number(p.avg_truth_return_bps ?? p.truth_return_bps ?? p.truth_bps ?? 0),
-      count: Number(p.count ?? p.transactions ?? p.total ?? 0),
-    }))
-  }, [data])
+  if (loading && !data) return <><PageTitle title="Analytics" right={period} /><Loading /></>
+  if (!data) {
+    return (
+      <>
+        <PageTitle title="Analytics" right={period} />
+        <EmptyState title="Analytics are not available" hint={error || 'The analytics endpoint did not answer.'} />
+      </>
+    )
+  }
 
-  const chains = useMemo(() => {
-    const rows = asArray(data?.chains || data?.chain_stats)
-    return rows.map((c: any) => ({
-      name: c.chain || c.name || c.key || '?',
-      count: Number(c.count ?? c.transactions ?? c.total ?? 0),
-      volume: Number(c.volume_usd ?? c.volume ?? 0),
-    }))
-  }, [data])
+  const [analytics, dashboard] = data
+  const totals = analytics.totals
+  const providers: ProviderRow[] = analytics.per_provider || analytics.provider_stats || []
+  const routes = dashboard.top_routes || []
 
-  const totals = data?.totals || data || {}
-
-  if (loading) return <><PageTitle title="Analytics" /><Loading /></>
-
-  const hasAny = providers.length > 0 || chains.length > 0
+  const COLUMNS: Column<ProviderRow>[] = [
+    { key: 'provider', header: 'Provider', render: r => <span className="text-[color:var(--ink)]">{r.provider}</span> },
+    { key: 'count', header: 'Settled', align: 'right', render: r => <span className="f-mono">{fmtNum(r.count)}</span> },
+    { key: 'success_rate', header: 'Success rate', align: 'right', render: r => <span className="f-mono">{pct(r.success_rate)}</span> },
+    { key: 'avg_truth_return_bps', header: 'Truth return', align: 'right', render: r => <span className="f-mono">{r.avg_truth_return_bps > 0 ? '+' : ''}{r.avg_truth_return_bps.toFixed(1)} bps</span> },
+  ]
 
   return (
     <div>
-      <PageTitle title="Analytics" subtitle="Provider quality, chain distribution and platform totals." />
+      <PageTitle title="Analytics" subtitle="Reconciled against settled outcomes, not estimates." right={period} />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatTile label="Transactions" value={fmtNum(totals.total_transactions ?? totals.transactions)} />
-        <StatTile label="Volume" value={fmtUsd(totals.total_volume_usd ?? totals.volume_usd, 0)} />
-        <StatTile label="Fees" value={fmtUsd(totals.total_fees_usd ?? totals.fees_usd)} />
-        <StatTile label="Success Rate" value={pct(totals.success_rate)} />
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <KpiTile label="Intents" value={fmtNum(totals.total_intents)} hint={`over ${totals.reconciled_intents ? fmtNum(totals.reconciled_intents) + ' reconciled' : 'window'}`} />
+        <KpiTile label="Completed" value={fmtNum(totals.completed)} />
+        <KpiTile label="Failed" value={fmtNum(totals.failed)} />
+        <KpiTile label="Success rate" value={pct(totals.success_rate)} />
       </div>
 
-      {!hasAny ? (
-        <EmptyState title="No analytics yet" hint="Provider and chain breakdowns appear once transactions flow through the platform." />
-      ) : (
-        <div className="space-y-6">
-          {providers.length > 0 && (
-            <div className="dash-card">
-              <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-4">Provider success rate</div>
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={providers} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                  <CartesianGrid stroke={CHART.grid} vertical={false} />
-                  <XAxis dataKey="name" stroke={CHART.axis} tick={{ fontSize: 10 }} />
-                  <YAxis stroke={CHART.axis} tick={{ fontSize: 10 }} width={36} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: '#1a1a1a' }} />
-                  <Bar dataKey="success" name="Success %" fill={CHART.series[0]} radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-light-grey-1 text-xs uppercase tracking-wider">
-                    <tr>
-                      <th className="p-2 text-left">Provider</th>
-                      <th className="p-2 text-left">Success</th>
-                      <th className="p-2 text-left">Truth Return</th>
-                      <th className="p-2 text-left">Count</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {providers.map(p => (
-                      <tr key={p.name} className="border-t border-dark-grey-3">
-                        <td className="p-2 text-light-grey-3">{p.name}</td>
-                        <td className="p-2 text-light-grey-2">{pct(p.success)}</td>
-                        <td className="p-2 text-light-grey-2">{p.truth.toFixed(1)} bps</td>
-                        <td className="p-2 text-light-grey-2">{fmtNum(p.count)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+      <div className="mb-6 grid gap-4 lg:grid-cols-2">
+        <Section title="Volume" subtitle={`${fmtUsd(totals.total_volume_usd, 0)} routed, ${fmtUsd(totals.total_fees_usd)} in fees`}>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="kicker">Volume</div>
+              <div className="mt-2 text-[1.6rem] font-light tracking-[-0.03em] text-[color:var(--ink)]">{fmtUsd(totals.total_volume_usd, 0)}</div>
             </div>
-          )}
-
-          {chains.length > 0 && (
-            <div className="dash-card">
-              <div className="text-xs uppercase tracking-wider text-light-grey-1 mb-4">Volume by chain</div>
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={chains} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                  <CartesianGrid stroke={CHART.grid} vertical={false} />
-                  <XAxis dataKey="name" stroke={CHART.axis} tick={{ fontSize: 10 }} />
-                  <YAxis stroke={CHART.axis} tick={{ fontSize: 10 }} width={36} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: '#1a1a1a' }} />
-                  <Bar dataKey="volume" name="Volume USD" fill={CHART.series[1]} radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div>
+              <div className="kicker">Fees</div>
+              <div className="mt-2 text-[1.6rem] font-light tracking-[-0.03em] text-[color:var(--ink)]">{fmtUsd(totals.total_fees_usd)}</div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        </Section>
+        <Section title="Volume by route" subtitle="Chain pairs, this period">
+          <BreakdownBars
+            rows={routes.map(r => ({ label: routeLabel(r.from_chain, r.to_chain), value: r.volume_usd, sub: `${fmtNum(r.intents)} intents` }))}
+            format={n => fmtUsd(n, 0)}
+          />
+        </Section>
+      </div>
+
+      <Section title="Provider quality" subtitle="Success rate and truth return against the quote, from settled outcomes only.">
+        {providers.length === 0 ? (
+          <p className="py-6 text-center text-[0.84rem] text-[color:var(--ink-4)]">No settled outcomes have been reconciled yet.</p>
+        ) : (
+          <DataTable columns={COLUMNS} rows={providers} rowKey={r => r.provider} />
+        )}
+      </Section>
     </div>
   )
 }
