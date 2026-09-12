@@ -19,8 +19,13 @@ export default function IntegrationsPage() {
 
   // A link to /integrations#disclaimer lands before this page has rendered, so
   // the browser cannot scroll to the section on its own.
+  // Scroll again once the web fonts are in, since swapping them in reflows the
+  // long lists above the target.
   useEffect(() => {
-    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView()
+    if (!hash) return
+    const go = () => document.getElementById(hash.slice(1))?.scrollIntoView()
+    go()
+    document.fonts?.ready.then(go)
   }, [hash])
 
   return (

@@ -74,10 +74,11 @@ export async function confirmAndSign(p: ConfirmParams) {
     } else {
       p.setTxBuilding(true)
       try {
+        // A destination named in the command itself arrives on the result.
         const built = await intentService.buildTransaction(
           selectedQuote,
           address,
-          destAddress || undefined,
+          destAddress || result.destination_address || undefined,
         )
         tx = built.transaction
         approval = built.approval || null

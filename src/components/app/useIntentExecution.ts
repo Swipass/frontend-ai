@@ -59,6 +59,9 @@ export function useIntentExecution() {
   // Which of the two possible signatures is in flight, so the receipt handler
   // knows whether an approval just landed or the swap itself settled.
   const txKindRef = useRef<TxKind>('swap')
+  // The wallet and destination the current quotes were built for. Their
+  // calldata pays those addresses, so it is only signed while both still match.
+  const quotedForRef = useRef<{ wallet: string; dest: string } | null>(null)
 
   const { isRecording, transcript, error: voiceError, startRecording, stopRecording } =
     useVoiceInput()
@@ -165,12 +168,14 @@ export function useIntentExecution() {
   const buildForQuote = useCallback(
     async (quote: QuoteResponse) => {
       if (!address) return
-      const built = await intentService.buildTransaction(quote, address, destAddress || undefined)
+      // A destination named in the command itself arrives on the result.
+      const dest = destAddress || result?.destination_address || undefined
+      const built = await intentService.buildTransaction(quote, address, dest)
       setCurrentTransaction(built.transaction)
       setApproval(built.approval || null)
       return built
     },
-    [address, destAddress],
+    [address, destAddress, result],
   )
 
   // Settle: reconcile on-chain outcome, record volume, report to analytics.
@@ -299,6 +304,7 @@ export function useIntentExecution() {
     })
     setHistId(id)
 
+    quotedForRef.current = { wallet: (address || '').toLowerCase(), dest: (destAddress || '').toLowerCase() }
     try {
       const headers = address ? { 'X-Wallet-Address': address } : undefined
       const res = await intentService.execute(
@@ -324,6 +330,19 @@ export function useIntentExecution() {
   const handleConfirm = useCallback(async () => {
     if (!result || !address) {
       toast.error('No transaction data')
+      return
+    }
+    // Quotes made before a wallet connected, or for another wallet or
+    // destination, carry calldata that pays whoever they were built for. Never
+    // sign those: fetch fresh quotes for the wallet and destination now in use.
+    const quotedFor = quotedForRef.current
+    if (
+      !quotedFor ||
+      quotedFor.wallet !== address.toLowerCase() ||
+      quotedFor.dest !== (destAddress || '').toLowerCase()
+    ) {
+      toast('Your wallet or destination changed since these quotes. Getting fresh quotes...', { id: 'requote' })
+      await handleSubmit()
       return
     }
     await confirmAndSign({
@@ -359,6 +378,7 @@ export function useIntentExecution() {
     sendTransactionAsync,
     histId,
     updateCommand,
+    handleSubmit,
   ])
 
   const closeSuccess = useCallback(() => {

@@ -109,7 +109,7 @@ export const PAGES: SeoPage[] = [
     indexable: true,
     heading: 'Third-party integrations',
     summary: [
-      'Swipass compares routes from third-party DEX aggregators, bridges and solver networks, including 0x, 1inch, Uniswap, KyberSwap, ParaSwap, LI.FI, Relay, Across, Stargate and deBridge, and hands you one transaction to sign from your own wallet.',
+      'Swipass compares routes from third-party DEX aggregators, bridges and solver networks, including 0x, 1inch, Uniswap, KyberSwap, ParaSwap, OpenOcean, OKX DEX, LI.FI, Relay, Rango, Squid, Across, Stargate, deBridge, Mayan, Symbiosis and NEAR Intents, and hands you one transaction to sign from your own wallet.',
       'Public exchange prices from Binance, Coinbase, OKX, Kraken and Bybit are used to compare each route with the exchange price, and GoPlus Security checks the token you are buying for known scam patterns.',
       'Swipass is non-custodial and does not operate, control or audit these third parties. Using a route is your decision, and any dispute with a third party is between you and that third party.',
     ],
