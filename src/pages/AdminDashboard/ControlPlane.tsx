@@ -4,7 +4,7 @@
 // without a redeploy.
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { adminService, type ManagedCredential } from '../../services/adminService'
+import { adminService, type ManagedCredential, type LLMSettings, type LLMTestResult } from '../../services/adminService'
 import toast from 'react-hot-toast'
 import { PageTitle, Loading, EmptyState, Toggle, ConfirmDialog, inputCls } from './shared'
 
@@ -289,6 +289,152 @@ function Blacklist() {
   )
 }
 
+/* ---------------------------------- Default LLM --------------------------- */
+// Every provider/model litellm can route to; free text still works for
+// anything not in this shortcut list.
+function DefaultLLM() {
+  const [state, setState] = useState<LLMSettings | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [provider, setProvider] = useState('')
+  const [model, setModel] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [result, setResult] = useState<LLMTestResult | null>(null)
+
+  const load = () => {
+    setLoading(true)
+    adminService
+      .getLLM()
+      .then(d => {
+        setState(d)
+        setProvider(d.provider)
+        setModel(d.model)
+      })
+      .catch(() => setState(null))
+      .finally(() => setLoading(false))
+  }
+  useEffect(load, [])
+
+  const dirty = !!state && (provider !== state.provider || model !== state.model || !!apiKey.trim())
+
+  const save = async () => {
+    if (reason.trim().length < 3) {
+      toast.error('Give a reason for the change (at least 3 characters)')
+      return
+    }
+    setSaving(true)
+    try {
+      const updated = await adminService.updateLLM({
+        provider: provider.trim(),
+        model: model.trim(),
+        api_key: apiKey.trim() || undefined,
+        reason: reason.trim(),
+      })
+      setState(updated)
+      setApiKey('')
+      setReason('')
+      setResult(null)
+      toast.success('Default LLM updated. In force on the next intent.')
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not update the default LLM')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const test = async () => {
+    setTesting(true)
+    setResult(null)
+    try {
+      setResult(await adminService.testLLM())
+    } catch (e: any) {
+      setResult({ ok: false, latency_ms: 0, model_string: state?.model_string || '', reply: null, error: e?.message || 'Test failed' })
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  if (loading) return <Loading />
+  if (!state) return <EmptyState title="Could not load the LLM settings" />
+
+  return (
+    <div className="border border-dark-grey-3 rounded-lg p-5">
+      <div className="font-display text-base font-semibold text-almost-white mb-2">Default LLM</div>
+      <p className="text-sm text-light-grey-1 leading-relaxed mb-5">
+        Every intent runs through LiteLLM. Switch the provider or model here with no redeploy; a developer's own
+        X-LLM-Provider/X-LLM-API-Key headers still override this per request.
+      </p>
+
+      <div className="grid gap-4 sm:grid-cols-2 mb-4">
+        <div>
+          <label className="text-xs uppercase tracking-wider text-light-grey-1 block mb-1">Provider</label>
+          <select value={provider} onChange={e => setProvider(e.target.value)} className={inputCls}>
+            {!state.providers.some(p => p.value === provider) && provider && (
+              <option value={provider}>{provider}</option>
+            )}
+            {state.providers.map(p => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+          <p className="text-xs text-light-grey-1 mt-1">Any litellm-supported provider works if typed by hand.</p>
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-wider text-light-grey-1 block mb-1">Model</label>
+          <input value={model} onChange={e => setModel(e.target.value)} placeholder="e.g. claude-sonnet-4-5" className={inputCls} />
+          <p className="text-xs text-light-grey-1 mt-1 font-mono">Routes as {provider && model ? `${provider === 'openai' ? model : `${provider}/${model}`}` : '-'}</p>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <label className="text-xs uppercase tracking-wider text-light-grey-1 block mb-1">API key</label>
+        <input
+          type="password"
+          value={apiKey}
+          onChange={e => setApiKey(e.target.value)}
+          placeholder={state.has_key ? `Set${state.key_masked ? ` · ${state.key_masked}` : ''} — enter a new one to rotate` : 'Enter a key for this provider'}
+          className={inputCls}
+        />
+      </div>
+
+      <div className="flex items-center gap-3 mb-4 text-xs text-light-grey-1">
+        <span className={`w-1.5 h-1.5 rounded-full ${state.has_key ? 'bg-light-grey-2' : 'bg-mid-grey'}`} />
+        {state.has_key ? `Key set (${state.key_source})` : 'No key set'}
+        {state.updated_at && <span>· last changed {new Date(state.updated_at * 1000).toLocaleString()}{state.updated_by ? ` by ${state.updated_by}` : ''}</span>}
+      </div>
+
+      {dirty && (
+        <div className="mb-4">
+          <label className="text-xs uppercase tracking-wider text-light-grey-1 block mb-1">Reason</label>
+          <input value={reason} onChange={e => setReason(e.target.value)} placeholder="Why this change is being made" className={inputCls} />
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-3">
+        <button onClick={save} disabled={saving || !dirty} className="sw-btn sw-btn-primary text-xs py-2 px-4 disabled:opacity-40">
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+        <button onClick={test} disabled={testing} className="sw-btn sw-btn-ghost text-xs py-2 px-4 disabled:opacity-40">
+          {testing ? 'Testing...' : 'Send a test request'}
+        </button>
+      </div>
+
+      {result && (
+        <div className={`mt-4 rounded border p-3 text-xs ${result.ok ? 'border-dark-grey-3' : 'border-mid-grey'}`}>
+          {result.ok ? (
+            <span className="text-light-grey-2">
+              <span className="font-mono">{result.model_string}</span> answered in {result.latency_ms}ms: "{result.reply}"
+            </span>
+          ) : (
+            <span className="text-light-grey-1">{result.error}</span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ----------------------------------- Tunables ----------------------------- */
 // The knobs that decide how routing behaves and what the platform charges.
 // Values outside their bounds are clamped by the backend rather than rejected,
@@ -421,6 +567,7 @@ function Tunables() {
 
 const TABS = [
   { key: 'credentials', label: 'Credentials' },
+  { key: 'llm', label: 'Default LLM' },
   { key: 'chains', label: 'Chains' },
   { key: 'blacklist', label: 'Blacklist' },
   { key: 'tunables', label: 'Routing & Fees' },
@@ -455,6 +602,7 @@ export default function ControlPlane() {
       </div>
 
       {tab === 'credentials' && <Credentials />}
+      {tab === 'llm' && <DefaultLLM />}
       {tab === 'chains' && <Chains />}
       {tab === 'blacklist' && <Blacklist />}
       {tab === 'tunables' && <Tunables />}

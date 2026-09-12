@@ -282,6 +282,38 @@ export interface ManagedCredential {
   label?: string
 }
 
+export interface LLMProviderOption {
+  value: string
+  label: string
+}
+
+export interface LLMSettings {
+  provider: string
+  model: string
+  model_string: string
+  has_key: boolean
+  key_masked: string
+  key_source: 'db' | 'env' | 'unset' | string
+  updated_at: number | null
+  updated_by: string | null
+  providers: LLMProviderOption[]
+}
+
+export interface LLMUpdate {
+  provider: string
+  model: string
+  api_key?: string
+  reason: string
+}
+
+export interface LLMTestResult {
+  ok: boolean
+  latency_ms: number
+  model_string: string
+  reply: string | null
+  error: string | null
+}
+
 export interface ProviderStat {
   provider: string
   count: number
@@ -509,6 +541,18 @@ export const adminService = {
   },
   async rejectPayout(id: string, reason: string) {
     return post<AdminPayout>(`/admin/payouts/${id}/reject`, { reason })
+  },
+
+  // Default LLM: provider, model, and the key that pairs with them.
+  async getLLM() {
+    return get<LLMSettings>('/admin/llm')
+  },
+  async updateLLM(body: LLMUpdate) {
+    return put<LLMSettings>('/admin/llm', body)
+  },
+  async testLLM() {
+    // A real completion call to the configured provider; give it room to answer.
+    return send<LLMTestResult>({ method: 'post', url: '/admin/llm/test', timeout: 20000 })
   },
 
   // Runtime tunables: routing weights, slippage cap, quote TTL, fee rates.
