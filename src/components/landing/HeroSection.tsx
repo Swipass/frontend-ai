@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Fragment, useEffect, useRef } from 'react'
 
 export function HeroSection() {
-  const hlRef = useRef<HTMLDivElement>(null)
+  const hlRef = useRef<HTMLHeadingElement>(null)
 
   // ── Subtle mouse parallax on the headline ──────────────────
   useEffect(() => {
@@ -103,7 +103,7 @@ export function HeroSection() {
       </div>
 
       {/* ── Headline (parallax wrapper) ─────────────────────── */}
-      <div ref={hlRef} style={{ willChange: 'transform' }}>
+      <h1 ref={hlRef} style={{ willChange: 'transform' }}>
         {/*
           KEY CHANGE: "DeFi in plain" is now a small prefix, so it reads
           like a label setting up the payoff. "language." is massive and
@@ -115,7 +115,7 @@ export function HeroSection() {
                      text-light-grey-1 leading-none tracking-tight"
         >
           DeFi in plain
-        </span>
+        </span>{' '}
         <span
           className="ha ha-3 hero-main relative inline-block
                      font-serif italic font-normal
@@ -124,7 +124,7 @@ export function HeroSection() {
         >
           language.
         </span>
-      </div>
+      </h1>
 
       {/* Tagline: each word staggers in individually. */}
       <div className="flex items-center gap-4 sm:gap-5 mt-10 md:mt-11">

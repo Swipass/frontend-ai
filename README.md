@@ -64,9 +64,42 @@ reports that it cannot load its networks rather than showing a stale list.
 | `/` | Landing page, with real backend stats |
 | `/app` | Command interface, wired to the full backend |
 | `/docs` | Developer docs with 5-language code tabs |
-| `/auth` | Clerk authentication |
+| `/auth` | Sign-in for developers and admins (Google or GitHub) |
 | `/dashboard/developer/*` | Project management, API keys, earnings, payouts |
 | `/dashboard/admin/*` | System controls, transactions, providers, users |
+
+## Search (SEO)
+
+Everything search engines read comes from one registry, `src/seo/pages.ts`.
+
+- The build (`build/seo/plugin.ts`) writes one HTML file per route with its own
+  title, description, canonical URL, Open Graph and X card tags, JSON-LD, and a
+  static content snapshot that crawlers can read without running JavaScript.
+  It also writes `sitemap.xml`, `robots.txt`, `llms.txt` and the IndexNow key
+  file, then fails the build if any of them is wrong.
+- `useDocumentHead` applies the same tags on client-side navigation.
+- `vercel.json` serves those files on clean URLs, returns a real 404 for
+  unknown paths, and marks `/auth` and `/dashboard/*` `noindex`.
+- `.github/workflows/indexnow.yml` tells IndexNow engines (Bing and others)
+  which public pages changed after each production deployment. To submit every
+  page by hand: `node scripts/indexnow.ts --all`.
+
+To add a public page, add its `<Route>` in `src/App.tsx` and an entry in
+`src/seo/pages.ts`. The canonical origin is `https://www.swipass.com`
+(`src/seo/site.ts`), because `swipass.com` redirects there.
+
+Search Console and Bing Webmaster Tools are best verified by DNS, which needs
+nothing here. For the HTML-tag method instead, set
+`SEO_GOOGLE_SITE_VERIFICATION` / `SEO_BING_SITE_VERIFICATION` in the Vercel
+project settings and redeploy.
+
+The social preview image `public/og-image.png` is rendered from
+`scripts/og/og-image.html`:
+
+```bash
+google-chrome --headless --hide-scrollbars --window-size=1200,630 \
+  --virtual-time-budget=5000 --screenshot=public/og-image.png scripts/og/og-image.html
+```
 
 ## Design System
 

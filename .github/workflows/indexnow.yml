@@ -1,0 +1,55 @@
+name: IndexNow
+
+# Vercel reports each deployment back to GitHub. When a production deployment
+# succeeds, tell IndexNow engines which public pages it changed since the last
+# successful production deployment.
+on: deployment_status
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  submit:
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      startsWith(github.event.deployment.environment, 'Production')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Find the previous successful production deployment
+        id: previous
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ENVIRONMENT: ${{ github.event.deployment.environment }}
+          CURRENT_ID: ${{ github.event.deployment.id }}
+          CURRENT_SHA: ${{ github.event.deployment.sha }}
+        run: |
+          candidates=$(gh api -X GET "repos/$GITHUB_REPOSITORY/deployments" \
+            -f environment="$ENVIRONMENT" -F per_page=30 \
+            --jq ".[] | select(.id != $CURRENT_ID and .sha != \"$CURRENT_SHA\") | \"\(.id):\(.sha)\"")
+          for row in $candidates; do
+            state=$(gh api "repos/$GITHUB_REPOSITORY/deployments/${row%%:*}/statuses" --jq '.[0].state')
+            if [ "$state" = "success" ]; then
+              echo "sha=${row#*:}" >> "$GITHUB_OUTPUT"
+              break
+            fi
+          done
+
+      - name: Submit changed pages
+        env:
+          PREVIOUS_SHA: ${{ steps.previous.outputs.sha }}
+          CURRENT_SHA: ${{ github.event.deployment.sha }}
+        run: |
+          if [ -n "$PREVIOUS_SHA" ] && git cat-file -e "$PREVIOUS_SHA^{commit}" 2>/dev/null; then
+            git diff --name-only "$PREVIOUS_SHA" "$CURRENT_SHA" | node scripts/indexnow.ts
+          else
+            node scripts/indexnow.ts --all
+          fi

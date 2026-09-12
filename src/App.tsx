@@ -8,8 +8,10 @@ import DeveloperDashboard from './pages/DeveloperDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import DocsPage from './pages/DocsPage'
 import AuthPage from './pages/Auth/AuthPage'
+import NotFoundPage from './pages/NotFoundPage'
 import { useAuth } from './hooks/useAuth'
 import { WalletProvider } from './components/WalletProvider'
+import { useDocumentHead } from './seo/useDocumentHead'
 
 // Pointer-based check: touch devices get the native cursor, never the custom one.
 function isCoarsePointer() {
@@ -75,6 +77,7 @@ function ProtectedRoute({ children, requireAdmin }: { children: React.ReactNode;
 export default function App() {
   // Touch devices keep the native cursor; the custom cursor is desktop-only.
   const [coarse] = useState(isCoarsePointer())
+  useDocumentHead()
   return (
     <>
       <div className="noise-overlay" />
@@ -124,7 +127,7 @@ export default function App() {
           }
         />
         <Route path="/dashboard" element={<Navigate to="/dashboard/developer" replace />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
   )
