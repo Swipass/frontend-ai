@@ -46,7 +46,21 @@ export function useWallet() {
     // types means the browser extension is found either way; matching by
     // type rather than id also survives RainbowKit renaming or reordering
     // its wallet list.
-    const injected = connectors.find(c => c.type === 'injected' || c.type === 'metaMask')
+    //
+    // That "metaMask" connector exists in the list unconditionally on mobile,
+    // extension or not: RainbowKit's own wallet definition treats every mobile
+    // browser as "should use the MetaMask connector" regardless of whether
+    // MetaMask is actually installed, since on a phone it otherwise falls
+    // back to deep-linking rather than a real injected provider. Matching it
+    // by type alone made this fast path fire on every phone and try to open
+    // MetaMask specifically, which fails outright for anyone using a
+    // different wallet app. window.ethereum only ever exists when a real
+    // extension (desktop) or wallet-app in-app browser (mobile) injected it,
+    // so gate the fast path on that rather than on the connector list alone.
+    const hasInjectedProvider = typeof window !== 'undefined' && Boolean((window as any).ethereum)
+    const injected = hasInjectedProvider
+      ? connectors.find(c => c.type === 'injected' || c.type === 'metaMask')
+      : undefined
 
     // A browser extension wallet is the fast path: one direct call, no modal.
     // Everything else (mobile, or desktop with no extension installed) goes
