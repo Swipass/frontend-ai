@@ -37,11 +37,11 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
     totalVolume,
     mobileTab,
     setMobileTab,
-    isConfirming,
     isSending,
-    isWaiting,
     handleConfirm,
     approval,
+    txState,
+    checkReceiptNow,
   } = ctx
 
   const [sheetWallet, setSheetWallet] = useState(false)
@@ -132,10 +132,10 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
                 <ConfirmButton
                   result={result}
                   approval={approval}
-                  isConfirming={isConfirming}
+                  txState={txState}
                   isSending={isSending}
-                  isWaiting={isWaiting}
                   onConfirm={handleConfirm}
+                  onCheckReceipt={checkReceiptNow}
                 />
               )}
             </div>

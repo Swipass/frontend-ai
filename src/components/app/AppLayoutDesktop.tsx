@@ -47,11 +47,11 @@ export function AppLayoutDesktop({ ctx }: AppLayoutDesktopProps) {
     chainName,
     connect,
     disconnect,
-    isConfirming,
     isSending,
-    isWaiting,
     handleConfirm,
     approval,
+    txState,
+    checkReceiptNow,
   } = ctx
 
   const [netOpen, setNetOpen] = useState(false)
@@ -169,10 +169,10 @@ export function AppLayoutDesktop({ ctx }: AppLayoutDesktopProps) {
             <ConfirmButton
               result={result}
               approval={approval}
-              isConfirming={isConfirming}
+              txState={txState}
               isSending={isSending}
-              isWaiting={isWaiting}
               onConfirm={handleConfirm}
+              onCheckReceipt={checkReceiptNow}
             />
           </div>
         )}

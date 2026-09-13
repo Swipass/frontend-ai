@@ -15,11 +15,11 @@ export function CommandResults({ ctx }: { ctx: IntentExecution }) {
     selectedProvider,
     handleSelectProvider,
     ratings,
-    isConfirming,
     isSending,
-    isWaiting,
     handleConfirm,
     approval,
+    txState,
+    checkReceiptNow,
     pendingWarning,
     txHash,
     isMobile,
@@ -55,10 +55,10 @@ export function CommandResults({ ctx }: { ctx: IntentExecution }) {
         <ConfirmButton
           result={result}
           approval={approval}
-          isConfirming={isConfirming}
+          txState={txState}
           isSending={isSending}
-          isWaiting={isWaiting}
           onConfirm={handleConfirm}
+          onCheckReceipt={checkReceiptNow}
         />
       )}
 

@@ -1,15 +1,18 @@
 // src/components/app/confirmAndSign.ts
 // Confirm -> (build) -> switch chain -> approve if needed -> sign -> send.
-// Extracted from the hook so the state machine stays readable. Talks back
-// through the passed setters.
 //
 // A route that spends an ERC20 needs the provider's spender approved before the
 // swap can execute. The backend reads the real allowance and returns that
 // approval with the transaction, so the wallet signs the approval first and the
 // swap second, instead of paying gas for a revert.
-import type { MutableRefObject } from 'react'
-import toast from 'react-hot-toast'
-import { parseEther, parseUnits, type PublicClient } from 'viem'
+//
+// Approval and swap are separate functions (not one function that branches and
+// recurses) so the caller's transaction state machine (txStateMachine.ts)
+// always knows exactly which one is in flight, and a re-render or duplicate
+// effect can never trigger the same signature twice: the reducer's own guard
+// (canRequestSignature) is checked before either function is ever called.
+import type { PublicClient } from 'viem'
+import { parseEther, parseUnits } from 'viem'
 import {
   intentService,
   IntentResponse,
@@ -36,7 +39,6 @@ export type SettleSnapshot = {
   // before/after native balance read is not contaminated by the gas spend.
   preNativeBalance?: bigint
 }
-export type TxKind = 'approval' | 'swap'
 
 function parseTxValue(raw: string): bigint {
   const v = raw || '0'
@@ -57,33 +59,38 @@ function buildGasParams(tx: TransactionPayload | ApprovalPayload): Record<string
   return g
 }
 
-interface ConfirmParams {
+// --- Resolving what to sign --------------------------------------------------
+
+export interface ResolveParams {
   result: IntentResponse
-  address: string
   selectedProvider: string
   currentTransaction: TransactionPayload | null
   approval: ApprovalPayload | null
+  address: string
   destAddress: string
   chainId?: number
-  publicClient?: PublicClient
-  simulation: { passed: boolean; reason?: string }
   switchChainAsync: (args: { chainId: number }) => Promise<any>
-  sendTransactionAsync: (args: any) => Promise<`0x${string}`>
-  settleRef: MutableRefObject<SettleSnapshot | null>
-  txKindRef: MutableRefObject<TxKind>
   setTxBuilding: (b: boolean) => void
   setCurrentTransaction: (t: TransactionPayload) => void
   setApproval: (a: ApprovalPayload | null) => void
-  setConfirming: (b: boolean) => void
-  setTxHash: (h: string) => void
-  onFail: () => void
+  onToast: (message: string, kind: 'error' | 'loading' | 'success') => void
 }
 
-export async function confirmAndSign(p: ConfirmParams) {
-  const { result, address, selectedProvider, destAddress } = p
+export interface ResolvedTx {
+  tx: TransactionPayload
+  approval: ApprovalPayload | null
+}
+
+/**
+ * Ensures a freshly-built tx (and any approval) for the currently selected
+ * quote, and switches network first if the wallet is on the wrong chain.
+ * Returns null when the caller should stop (a build failed, or a network
+ * switch was kicked off and confirm must be pressed again).
+ */
+export async function resolveTransactionForConfirm(p: ResolveParams): Promise<ResolvedTx | null> {
+  const { result, selectedProvider } = p
   const selectedQuote = result.all_quotes.find(q => q.provider === selectedProvider) || result.quote
 
-  // Ensure a freshly-built tx for the selected quote at confirm time.
   let tx = p.currentTransaction
   let approval = p.approval
   if (!tx || selectedQuote.provider !== result.selected_provider) {
@@ -96,100 +103,100 @@ export async function confirmAndSign(p: ConfirmParams) {
         // A destination named in the command itself arrives on the result.
         const built = await intentService.buildTransaction(
           selectedQuote,
-          address,
-          destAddress || result.destination_address || undefined,
+          p.address,
+          p.destAddress || result.destination_address || undefined,
         )
         tx = built.transaction
         approval = built.approval || null
         p.setCurrentTransaction(built.transaction)
         p.setApproval(approval)
       } catch (e: any) {
-        toast.error(e.message || 'Failed to build transaction')
+        p.onToast(e.message || 'Failed to build transaction', 'error')
         p.setTxBuilding(false)
-        return
+        return null
       }
       p.setTxBuilding(false)
     }
   }
   if (!tx || !tx.to) {
-    toast.error('Invalid transaction data')
-    return
+    p.onToast('Invalid transaction data', 'error')
+    return null
   }
 
   if (p.chainId !== tx.chain_id) {
     try {
-      toast.loading(`Switching network to ${tx.chain_name || 'required chain'}...`, { id: 'switch' })
+      p.onToast(`Switching network to ${tx.chain_name || 'required chain'}...`, 'loading')
       await p.switchChainAsync({ chainId: tx.chain_id })
-      toast.success('Network switched. Press Confirm again.', { id: 'switch' })
+      p.onToast('Network switched. Press Confirm again.', 'success')
     } catch (err: any) {
-      toast.error(err.message || 'Failed to switch network', { id: 'switch' })
+      p.onToast(err.message || 'Failed to switch network', 'error')
     }
-    return
+    return null
   }
 
-  // Step one of two: grant the allowance this route needs.
-  if (approval) {
-    p.setConfirming(true)
-    p.txKindRef.current = 'approval'
-    try {
-      const hash = await p.sendTransactionAsync({
-        to: approval.to as `0x${string}`,
-        data: approval.data as `0x${string}`,
-        value: 0n,
-        ...buildGasParams(approval),
-      })
-      p.setTxHash(hash)
-      const label = approval.is_reset
-        ? `Resetting the ${approval.token_symbol} allowance...`
-        : `Approving ${approval.token_symbol}...`
-      toast.loading(label, { id: 'tx' })
-    } catch (err: any) {
-      toast.error(err.message || 'Approval rejected')
-      p.setConfirming(false)
+  return { tx, approval }
+}
+
+// --- Signing ------------------------------------------------------------------
+
+export interface SignApprovalParams {
+  approval: ApprovalPayload
+  sendTransactionAsync: (args: any) => Promise<`0x${string}`>
+}
+
+/** Sends the ERC20 approval. Throws on rejection/failure; never sends the swap. */
+export async function signApproval(p: SignApprovalParams): Promise<`0x${string}`> {
+  return p.sendTransactionAsync({
+    to: p.approval.to as `0x${string}`,
+    data: p.approval.data as `0x${string}`,
+    value: 0n,
+    ...buildGasParams(p.approval),
+  })
+}
+
+export interface SignSwapParams {
+  tx: TransactionPayload
+  result: IntentResponse
+  selectedQuote: IntentResponse['quote']
+  address: string
+  destAddress: string
+  publicClient?: PublicClient
+  simulation: { passed: boolean; reason?: string }
+  sendTransactionAsync: (args: any) => Promise<`0x${string}`>
+  settleRef: { current: SettleSnapshot | null }
+}
+
+/** Sends the swap transaction. Snapshots what is being settled before signing. */
+export async function signSwap(p: SignSwapParams): Promise<`0x${string}`> {
+  const { tx, result, selectedQuote, address, destAddress } = p
+  const sameChain = selectedQuote.from_chain === selectedQuote.to_chain
+  const recipient = destAddress || result.destination_address || address
+  let outputToken: OutputToken | null = null
+  let preNativeBalance: bigint | undefined
+  if (sameChain) {
+    outputToken = await resolveOutputToken(selectedQuote).catch(() => null)
+    if (outputToken?.native && p.publicClient && recipient.toLowerCase() !== address.toLowerCase()) {
+      preNativeBalance = await readNativeBalance(p.publicClient, recipient).catch(() => undefined)
     }
-    return
+  }
+  p.settleRef.current = {
+    intentId: result.intent_id,
+    toAmount: selectedQuote.to_amount,
+    toToken: selectedQuote.to_token,
+    provider: selectedQuote.provider,
+    simulationPassed: p.simulation.passed,
+    simulationReason: p.simulation.reason,
+    volumeUsd: volumeFromQuote(selectedQuote),
+    sameChain,
+    recipient,
+    outputToken,
+    preNativeBalance,
   }
 
-  p.setConfirming(true)
-  p.txKindRef.current = 'swap'
-  try {
-    // Snapshot what we're settling before the async signature round-trip.
-    // Same-chain only: resolve the real output token so settlement can measure
-    // what actually landed rather than echo the quote back as its own proof.
-    const sameChain = selectedQuote.from_chain === selectedQuote.to_chain
-    const recipient = destAddress || result.destination_address || address
-    let outputToken: OutputToken | null = null
-    let preNativeBalance: bigint | undefined
-    if (sameChain) {
-      outputToken = await resolveOutputToken(selectedQuote).catch(() => null)
-      if (outputToken?.native && p.publicClient && recipient.toLowerCase() !== address.toLowerCase()) {
-        preNativeBalance = await readNativeBalance(p.publicClient, recipient).catch(() => undefined)
-      }
-    }
-    p.settleRef.current = {
-      intentId: result.intent_id,
-      toAmount: selectedQuote.to_amount,
-      toToken: selectedQuote.to_token,
-      provider: selectedQuote.provider,
-      simulationPassed: p.simulation.passed,
-      simulationReason: p.simulation.reason,
-      volumeUsd: volumeFromQuote(selectedQuote),
-      sameChain,
-      recipient,
-      outputToken,
-      preNativeBalance,
-    }
-    const hash = await p.sendTransactionAsync({
-      to: tx.to as `0x${string}`,
-      data: tx.data as `0x${string}`,
-      value: parseTxValue(tx.value),
-      ...buildGasParams(tx),
-    })
-    p.setTxHash(hash)
-    toast.loading('Transaction submitted. Waiting for confirmation...', { id: 'tx' })
-  } catch (err: any) {
-    toast.error(err.message || 'Transaction failed')
-    p.setConfirming(false)
-    p.onFail()
-  }
+  return p.sendTransactionAsync({
+    to: tx.to as `0x${string}`,
+    data: tx.data as `0x${string}`,
+    value: parseTxValue(tx.value),
+    ...buildGasParams(tx),
+  })
 }
