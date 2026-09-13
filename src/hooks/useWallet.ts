@@ -80,27 +80,24 @@ export function useWallet() {
       }
     }
 
-    // wagmi's WalletConnect connector only starts a fresh pairing (the thing
-    // that triggers "open in app") when its underlying provider has no
-    // session yet. An attempt that gets interrupted before the wallet app
-    // approves it -- e.g. the phone had nothing installed to hand the link
-    // off to, or the user backgrounded the tab -- can still leave a session
-    // object in place, so every retry after that silently tries to reuse a
-    // pairing that was never actually approved instead of prompting again.
-    // Disconnecting first clears that out; it is a no-op when there was
-    // nothing to clear.
-    await Promise.all(
-      connectors
-        .filter(c => c.type === 'walletConnect')
-        .map(c => disconnectAsync({ connector: c }).catch(() => {}))
-    )
-
+    // A previous fix tried to clear a stale WalletConnect session here by
+    // calling connector.disconnect() before every connect attempt. That
+    // connector's getProvider() lazily calls EthereumProvider.init() once and
+    // caches the result for the rest of the page's life -- disconnect() never
+    // resets that cache, so tearing down the relay transport left every
+    // future connect attempt (including the one RainbowKit's own modal makes
+    // right after the user picks a wallet) reusing a dead, already-torn-down
+    // transport with nothing left to respond. That is a worse failure than
+    // the one it was fixing: an unconditional, unrecoverable hang on every
+    // single attempt instead of an occasional stuck retry after an
+    // interrupted first one. Removed; see the commit message for the full
+    // trace instead of re-adding a variant of this without live testing.
     if (openConnectModal) {
       openConnectModal()
     } else {
       toast.error('Wallet connection is still loading, try again in a moment')
     }
-  }, [connectors, connectAsync, disconnectAsync, openConnectModal])
+  }, [connectors, connectAsync, openConnectModal])
 
   const disconnectWallet = useCallback(async () => {
     await disconnectAsync().catch(() => {})
