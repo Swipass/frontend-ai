@@ -1,21 +1,40 @@
 // src/App.tsx
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
-import LandingPage from './pages/LandingPage'
-import AppPage from './pages/AppPage'
-import DeveloperDashboard from './pages/DeveloperDashboard'
-import AdminDashboard from './pages/AdminDashboard'
-import DocsPage from './pages/DocsPage'
-import AuthPage from './pages/Auth/AuthPage'
-import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage'
-import ResetPasswordPage from './pages/Auth/ResetPasswordPage'
-import VerifyEmailPage from './pages/Auth/VerifyEmailPage'
-import NotFoundPage from './pages/NotFoundPage'
-import IntegrationsPage from './pages/IntegrationsPage'
 import { useAuth } from './hooks/useAuth'
-import { WalletProvider } from './components/WalletProvider'
 import { useDocumentHead } from './seo/useDocumentHead'
+
+// Each page is its own chunk, fetched only when that route is visited. The
+// landing page is the front door and must stay light: without this, every
+// visitor downloaded wagmi/viem/RainbowKit and both dashboards (a 1.7MB
+// bundle) before the landing page could even paint, which is what made every
+// page feel slow on mobile regardless of which one it was.
+//
+// WalletProvider carries the same weight (it pulls in wagmi/viem/RainbowKit)
+// and is lazy for the same reason: only /app and the dashboards ever mount it.
+const WalletProvider = lazy(() =>
+  import('./components/WalletProvider').then(m => ({ default: m.WalletProvider }))
+)
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+const AppPage = lazy(() => import('./pages/AppPage'))
+const DeveloperDashboard = lazy(() => import('./pages/DeveloperDashboard'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const DocsPage = lazy(() => import('./pages/DocsPage'))
+const AuthPage = lazy(() => import('./pages/Auth/AuthPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/Auth/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPasswordPage'))
+const VerifyEmailPage = lazy(() => import('./pages/Auth/VerifyEmailPage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'))
+
+function RouteFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-deepest-dark">
+      <div className="w-6 h-6 border-2 border-mid-grey border-t-almost-white rounded-full animate-spin" />
+    </div>
+  )
+}
 
 // Pointer-based check: touch devices get the native cursor, never the custom one.
 function isCoarsePointer() {
@@ -98,45 +117,47 @@ export default function App() {
           },
         }}
       />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route
-          path="/app"
-          element={
-            <WalletProvider>
-              <AppPage />
-            </WalletProvider>
-          }
-        />
-        <Route path="/docs" element={<DocsPage />} />
-        <Route path="/integrations" element={<IntegrationsPage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
-        <Route path="/auth/reset" element={<ResetPasswordPage />} />
-        <Route path="/auth/verify" element={<VerifyEmailPage />} />
-        <Route
-          path="/dashboard/developer/*"
-          element={
-            <ProtectedRoute>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route
+            path="/app"
+            element={
               <WalletProvider>
-                <DeveloperDashboard />
+                <AppPage />
               </WalletProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/admin/*"
-          element={
-            <ProtectedRoute requireAdmin>
-              <WalletProvider>
-                <AdminDashboard />
-              </WalletProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/dashboard" element={<Navigate to="/dashboard/developer" replace />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+            }
+          />
+          <Route path="/docs" element={<DocsPage />} />
+          <Route path="/integrations" element={<IntegrationsPage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
+          <Route path="/auth/reset" element={<ResetPasswordPage />} />
+          <Route path="/auth/verify" element={<VerifyEmailPage />} />
+          <Route
+            path="/dashboard/developer/*"
+            element={
+              <ProtectedRoute>
+                <WalletProvider>
+                  <DeveloperDashboard />
+                </WalletProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/*"
+            element={
+              <ProtectedRoute requireAdmin>
+                <WalletProvider>
+                  <AdminDashboard />
+                </WalletProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/dashboard" element={<Navigate to="/dashboard/developer" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </>
   )
 }
