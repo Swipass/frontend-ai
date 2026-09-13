@@ -9,7 +9,7 @@
 // swap second, instead of paying gas for a revert.
 import type { MutableRefObject } from 'react'
 import toast from 'react-hot-toast'
-import { parseEther, parseUnits } from 'viem'
+import { parseEther, parseUnits, type PublicClient } from 'viem'
 import {
   intentService,
   IntentResponse,
@@ -17,8 +17,25 @@ import {
   ApprovalPayload,
 } from '../../services/intentService'
 import { volumeFromQuote } from './constants'
+import { readNativeBalance, resolveOutputToken, type OutputToken } from './settlement'
 
-export type SettleSnapshot = { intentId: string; toAmount: string; volumeUsd?: number }
+export type SettleSnapshot = {
+  intentId: string
+  toAmount: string
+  toToken: string
+  provider: string
+  simulationPassed: boolean
+  simulationReason?: string
+  volumeUsd?: number
+  // Same-chain only: a bridge's destination leg lands later, often on another
+  // chain, so this receipt cannot prove what arrived there. See settlement.ts.
+  sameChain: boolean
+  recipient: string
+  outputToken: OutputToken | null
+  // Set only when recipient did not pay this transaction's own gas, so a
+  // before/after native balance read is not contaminated by the gas spend.
+  preNativeBalance?: bigint
+}
 export type TxKind = 'approval' | 'swap'
 
 function parseTxValue(raw: string): bigint {
@@ -48,6 +65,8 @@ interface ConfirmParams {
   approval: ApprovalPayload | null
   destAddress: string
   chainId?: number
+  publicClient?: PublicClient
+  simulation: { passed: boolean; reason?: string }
   switchChainAsync: (args: { chainId: number }) => Promise<any>
   sendTransactionAsync: (args: any) => Promise<`0x${string}`>
   settleRef: MutableRefObject<SettleSnapshot | null>
@@ -135,10 +154,30 @@ export async function confirmAndSign(p: ConfirmParams) {
   p.txKindRef.current = 'swap'
   try {
     // Snapshot what we're settling before the async signature round-trip.
+    // Same-chain only: resolve the real output token so settlement can measure
+    // what actually landed rather than echo the quote back as its own proof.
+    const sameChain = selectedQuote.from_chain === selectedQuote.to_chain
+    const recipient = destAddress || result.destination_address || address
+    let outputToken: OutputToken | null = null
+    let preNativeBalance: bigint | undefined
+    if (sameChain) {
+      outputToken = await resolveOutputToken(selectedQuote).catch(() => null)
+      if (outputToken?.native && p.publicClient && recipient.toLowerCase() !== address.toLowerCase()) {
+        preNativeBalance = await readNativeBalance(p.publicClient, recipient).catch(() => undefined)
+      }
+    }
     p.settleRef.current = {
       intentId: result.intent_id,
       toAmount: selectedQuote.to_amount,
+      toToken: selectedQuote.to_token,
+      provider: selectedQuote.provider,
+      simulationPassed: p.simulation.passed,
+      simulationReason: p.simulation.reason,
       volumeUsd: volumeFromQuote(selectedQuote),
+      sameChain,
+      recipient,
+      outputToken,
+      preNativeBalance,
     }
     const hash = await p.sendTransactionAsync({
       to: tx.to as `0x${string}`,

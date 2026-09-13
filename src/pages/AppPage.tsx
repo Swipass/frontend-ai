@@ -32,6 +32,7 @@ export default function AppPage() {
         txHash={ctx.txHash}
         explorerUrl={ctx.explorerUrl}
         isMobile={ctx.isMobile}
+        receipt={ctx.settlementReceipt}
         onClose={ctx.closeSuccess}
       />
 

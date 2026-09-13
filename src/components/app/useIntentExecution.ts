@@ -4,7 +4,7 @@
 // AppPage and the layout components are thin consumers of this hook.
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import toast from 'react-hot-toast'
-import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi'
+import { useSendTransaction, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
 import {
   intentService,
   IntentResponse,
@@ -19,6 +19,7 @@ import { useWallet } from '../../hooks/useWallet'
 import { useVoiceInput } from '../../hooks/useVoiceInput'
 import { buildQuickCommands, capitalize, MOBILE_BREAKPOINT, MobileTab } from './constants'
 import { confirmAndSign, SettleSnapshot, TxKind } from './confirmAndSign'
+import { measureSettlement, varianceBps, type SettlementReceipt } from './settlement'
 
 export function useIntentExecution() {
   const { commandHistory: sessionCommands, addCommand, updateCommand } = useAppStore()
@@ -43,6 +44,11 @@ export function useIntentExecution() {
   const [currentTransaction, setCurrentTransaction] = useState<TransactionPayload | null>(null)
   // The ERC20 approval this route needs before it can execute, if any.
   const [approval, setApproval] = useState<ApprovalPayload | null>(null)
+  // Pre-flight simulation for whichever quote is currently staged to sign.
+  // Tracked separately because it comes from two different endpoints
+  // depending on whether the selected quote is the original best one.
+  const [simulation, setSimulation] = useState<{ passed: boolean; reason?: string }>({ passed: false })
+  const [settlementReceipt, setSettlementReceipt] = useState<SettlementReceipt | null>(null)
   const [txBuilding, setTxBuilding] = useState(false)
   const [ratings, setRatings] = useState<ProviderRating[]>([])
   const [feeInfo, setFeeInfo] = useState<{ direct?: string; developer?: string }>({})
@@ -68,6 +74,7 @@ export function useIntentExecution() {
   const { sendTransactionAsync, isPending: isSending } = useSendTransaction()
   const { data: receipt, isLoading: isWaiting, isSuccess: txSuccess } =
     useWaitForTransactionReceipt({ hash: txHash as `0x${string}` })
+  const publicClient = usePublicClient()
 
   // Responsive breakpoint (mobile / tablet single-column below 900px).
   useEffect(() => {
@@ -173,6 +180,7 @@ export function useIntentExecution() {
       const built = await intentService.buildTransaction(quote, address, dest)
       setCurrentTransaction(built.transaction)
       setApproval(built.approval || null)
+      setSimulation({ passed: built.simulation_passed, reason: built.simulation_reason })
       return built
     },
     [address, destAddress, result],
@@ -208,10 +216,40 @@ export function useIntentExecution() {
     const snap = settleRef.current
     if (receipt.status === 'success') {
       updateCommand(histId, { status: 'completed', txHash: receipt.transactionHash, volumeUsd: snap?.volumeUsd })
-      if (snap)
-        intentService.reportStatus(snap.intentId, receipt.transactionHash, 'completed', snap.toAmount).catch(() => {})
       setShowSuccess(true)
       toast.success('Transaction settled!')
+      if (snap) {
+        // The receipt: quoted vs. executed, in the open, every time. Shown
+        // immediately with what we already know; "actual" and "settlement"
+        // fill in once measurement resolves (or stay unmeasured, honestly,
+        // rather than echo the quote back as its own proof). See
+        // docs/security-model.md.
+        setSettlementReceipt({
+          quotedToAmount: snap.toAmount,
+          toToken: snap.toToken,
+          provider: snap.provider,
+          simulationPassed: snap.simulationPassed,
+          simulationReason: snap.simulationReason,
+          // A same-chain swap can be measured from this very receipt; a
+          // bridge's destination leg cannot, and stays pending here (the
+          // source-chain transaction above did confirm).
+          settlement: 'pending',
+        })
+        measureSettlement(snap, receipt.logs, publicClient)
+          .then(actual => {
+            intentService
+              .reportStatus(snap.intentId, receipt.transactionHash, 'completed', actual)
+              .catch(() => {})
+            if (actual) {
+              setSettlementReceipt(prev =>
+                prev
+                  ? { ...prev, actualToAmount: actual, varianceBps: varianceBps(snap.toAmount, actual) ?? undefined, settlement: 'confirmed' }
+                  : prev,
+              )
+            }
+          })
+          .catch(() => {})
+      }
     } else {
       updateCommand(histId, { status: 'failed' })
       if (snap) intentService.reportStatus(snap.intentId, receipt.transactionHash, 'failed').catch(() => {})
@@ -229,6 +267,7 @@ export function useIntentExecution() {
     result,
     selectedProvider,
     buildForQuote,
+    publicClient,
   ])
 
   const handleNetworkSwitch = useCallback(
@@ -271,6 +310,7 @@ export function useIntentExecution() {
       if (selectedQuote.provider === result.selected_provider) {
         setCurrentTransaction(result.transaction)
         setApproval(result.approval || null)
+        setSimulation({ passed: result.simulation_passed, reason: result.simulation_reason })
       } else {
         fetchTransactionForQuote(selectedQuote)
       }
@@ -353,6 +393,8 @@ export function useIntentExecution() {
       approval,
       destAddress,
       chainId,
+      publicClient,
+      simulation,
       switchChainAsync,
       sendTransactionAsync,
       settleRef,
@@ -374,6 +416,8 @@ export function useIntentExecution() {
     approval,
     destAddress,
     chainId,
+    publicClient,
+    simulation,
     switchChainAsync,
     sendTransactionAsync,
     histId,
@@ -389,6 +433,7 @@ export function useIntentExecution() {
     setDestAddress('')
     setShowDestInput(false)
     setTxHash('')
+    setSettlementReceipt(null)
     settleRef.current = null
   }, [])
 
@@ -478,6 +523,7 @@ export function useIntentExecution() {
     isWaiting,
     showSuccess,
     txHash,
+    settlementReceipt,
     closeSuccess,
     explorerUrl,
     pendingWarning,
