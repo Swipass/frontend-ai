@@ -448,6 +448,7 @@ const TUNABLE_FIELDS: { key: string; label: string; hint: string; step: number }
   { key: 'direct_user_fee_percent', label: 'Direct user fee (%)', hint: 'Charged on traffic with no API key.', step: 0.01 },
   { key: 'developer_fee_percent', label: 'Developer fee (%)', hint: 'Charged on traffic from a developer project.', step: 0.01 },
   { key: 'developer_revenue_share', label: 'Developer revenue share', hint: 'Fraction of the developer fee paid out, unless a project overrides it.', step: 0.05 },
+  { key: 'max_alternative_routes', label: 'Maximum alternative routes', hint: 'How many extra quotes to show beside the best route in the app (0 hides the list). Every provider still competes for best route regardless of this value.', step: 1 },
 ]
 
 function Tunables() {
