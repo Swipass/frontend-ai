@@ -11,9 +11,20 @@
 // is a copy of what the backend last said, never a substitute for asking.
 import { ReactNode, useEffect, useState } from 'react'
 import { WagmiProvider } from 'wagmi'
-import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
+import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
 import { buildConfig } from '../config/wagmi'
 import { intentService, ChainInfo } from '../services/intentService'
+
+// connectWallet (useWallet.ts) now opens RainbowKit's own connect modal for
+// any non-injected wallet, so it has to look like it belongs on Swipass
+// rather than RainbowKit's default light theme.
+const rainbowKitTheme = darkTheme({
+  accentColor: '#f5f5f5',
+  accentColorForeground: '#0a0a0a',
+  borderRadius: 'medium',
+  fontStack: 'system',
+  overlayBlur: 'small',
+})
 
 const CACHE_KEY = 'swipass.chains.v1'
 
@@ -103,7 +114,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   return (
     <WagmiProvider config={config}>
-      <RainbowKitProvider>{children}</RainbowKitProvider>
+      <RainbowKitProvider theme={rainbowKitTheme}>{children}</RainbowKitProvider>
     </WagmiProvider>
   )
 }

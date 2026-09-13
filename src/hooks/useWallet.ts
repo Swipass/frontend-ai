@@ -7,7 +7,7 @@ import {
   useConnect,
   useDisconnect,
 } from 'wagmi'
-import { isMobile } from 'react-device-detect'
+import { useConnectModal } from '@rainbow-me/rainbowkit'
 import toast from 'react-hot-toast'
 import { useWalletStore } from '../store/walletStore'
 
@@ -22,6 +22,7 @@ export function useWallet() {
   const { switchChainAsync } = useSwitchChain()
   const { connectAsync, connectors } = useConnect()
   const { disconnectAsync } = useDisconnect()
+  const { openConnectModal } = useConnectModal()
   const { connect: storeConnect, disconnect: storeDisconnect, setBalance, setChain } = useWalletStore()
 
   // Keep store in sync
@@ -46,43 +47,31 @@ export function useWallet() {
     // type rather than id also survives RainbowKit renaming or reordering
     // its wallet list.
     const injected = connectors.find(c => c.type === 'injected' || c.type === 'metaMask')
-    const wc = connectors.find(c => c.type === 'walletConnect')
 
-    // Mobile: WalletConnect only (injected doesn't exist)
-    if (isMobile) {
-      if (wc) {
-        await connectAsync({ connector: wc }).catch((e: any) =>
-          toast.error(e?.message || 'Connection failed')
-        )
-      } else {
-        toast.error('No WalletConnect connector found')
-      }
-      return
-    }
-
-    // Desktop: try injected first, else WalletConnect
+    // A browser extension wallet is the fast path: one direct call, no modal.
+    // Everything else (mobile, or desktop with no extension installed) goes
+    // through RainbowKit's own connect modal instead of grabbing a raw
+    // WalletConnect connector and calling it directly. RainbowKit deliberately
+    // ships that connector with showQrModal disabled so its own modal can
+    // drive the WalletConnect UI (QR on desktop, app deep link on mobile) off
+    // the connector's display_uri event; calling connect on it ourselves just
+    // opens a WalletConnect session and waits for a peer to scan a URI that
+    // was never shown to anyone, which looks exactly like nothing happening.
     if (injected) {
       try {
         await connectAsync({ connector: injected })
         return // success
-      } catch (e: any) {
-        // user rejected or not available: fall back to WalletConnect
-        if (wc) {
-          await connectAsync({ connector: wc }).catch((err: any) =>
-            toast.error(err?.message || 'Connection failed')
-          )
-        } else {
-          toast.error('No wallet connector available')
-        }
+      } catch {
+        // user rejected or extension not actually available: offer the modal
       }
-    } else if (wc) {
-      await connectAsync({ connector: wc }).catch((err: any) =>
-        toast.error(err?.message || 'Connection failed')
-      )
-    } else {
-      toast.error('No wallet connector available')
     }
-  }, [connectors, connectAsync])
+
+    if (openConnectModal) {
+      openConnectModal()
+    } else {
+      toast.error('Wallet connection is still loading, try again in a moment')
+    }
+  }, [connectors, connectAsync, openConnectModal])
 
   const disconnectWallet = useCallback(async () => {
     await disconnectAsync().catch(() => {})
