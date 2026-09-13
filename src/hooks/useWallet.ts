@@ -38,8 +38,15 @@ export function useWallet() {
 
   // 🔥 The magic: one connect function that works everywhere
   const connectWallet = useCallback(async () => {
-    const injected = connectors.find(c => c.id === 'injected')
-    const wc = connectors.find(c => c.id === 'walletConnect')
+    // With no WalletConnect project id, buildConfig falls back to a bare
+    // injected() connector (type "injected"). With one configured, it uses
+    // RainbowKit's default wallet list instead, where MetaMask gets its own
+    // dedicated connector (type "metaMask", never "injected"). Matching both
+    // types means the browser extension is found either way; matching by
+    // type rather than id also survives RainbowKit renaming or reordering
+    // its wallet list.
+    const injected = connectors.find(c => c.type === 'injected' || c.type === 'metaMask')
+    const wc = connectors.find(c => c.type === 'walletConnect')
 
     // Mobile: WalletConnect only (injected doesn't exist)
     if (isMobile) {
