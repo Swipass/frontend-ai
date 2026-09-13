@@ -52,12 +52,12 @@ export const PAGES: SeoPage[] = [
     label: 'Home',
     title: 'Swipass | Cross-Chain Swaps and Bridging in Plain Language',
     description:
-      'Swap, bridge and send crypto across chains by saying what you want. Swipass compares live routes across providers and hands you one transaction to sign.',
+      'AI-powered transaction execution for Web3: say what you want, and Swipass routes it across every connected swap and bridge provider, simulates it, and hands you one transaction to sign.',
     indexable: true,
     heading: 'DeFi in plain language.',
     summary: [
-      'Swipass turns a plain-language command into a cross-chain swap, bridge or send. Connect a wallet, say what you need, and Swipass finds the optimal route and settles it.',
-      'It is non-custodial: every transaction is signed from your own wallet, and end users need no account or sign-up. Developers integrate the same flow through one REST endpoint and earn a share of the fees their users generate.',
+      'Swipass turns a plain-language command into a cross-chain swap, bridge or send: a natural-language transaction intent API for Web3. Connect a wallet, say what you need, and Swipass routes it across every connected provider, pre-flight simulates the result, and settles it.',
+      'It is non-custodial: every transaction is signed from your own wallet, and end users need no account or sign-up. Developers integrate the same DeFi routing and provider-comparison engine through one REST endpoint and earn a share of the fees their users generate.',
     ],
     snapshot: ['features', 'faq'],
     schema: ['webApplication', 'faq'],
@@ -87,7 +87,7 @@ export const PAGES: SeoPage[] = [
     label: 'Docs',
     title: 'Swipass API Docs | Cross-Chain Intent API for Developers',
     description:
-      'Build cross-chain swaps and bridges into your product with one REST endpoint. Parse plain-language intents, get simulated quotes and earn a share of fees.',
+      'A developer transaction API for cross-chain swaps and bridge aggregation: one endpoint parses natural-language Web3 transactions, simulates the result, and returns ready-to-sign calldata. Earn a share of fees.',
     indexable: true,
     heading: 'Swipass API Developer Documentation',
     summary: [
