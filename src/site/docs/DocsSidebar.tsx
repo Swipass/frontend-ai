@@ -87,7 +87,7 @@ export function DocsSidebar({
           })}
         </nav>
 
-        <div className="glass mt-8 p-5">
+        <div className="glass relative mt-8 p-5">
           <div className="kicker">Build with Swipass</div>
           <p className="mt-2 text-[0.82rem] leading-relaxed text-[color:var(--ink-3)]">
             Create a project and an API key in the developer dashboard.

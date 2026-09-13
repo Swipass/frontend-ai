@@ -97,9 +97,11 @@
 @media (min-width: 768px) { .site :is(.pill, .chip).md\:inline-flex { display: inline-flex; } }
 @media (min-width: 1024px) { .site :is(.pill, .chip).lg\:inline-flex { display: inline-flex; } }
 
-/* Frosted card with a lit top edge. */
+/* Frosted card with a lit top edge. Add `relative` or `absolute` in the
+   markup as needed: this rule used to hardcode `position: relative`, which
+   silently beat Tailwind's single-class `absolute` utility on specificity
+   and broke every glass panel that was meant to float over the page. */
 .site .glass {
-  position: relative;
   border-radius: 1.4rem;
   border: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));

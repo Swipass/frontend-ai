@@ -74,7 +74,7 @@ export function DocsHero({ apiBase, onJump }: { apiBase: string; onJump: (id: st
                 key={jump.id}
                 type="button"
                 onClick={() => onJump(jump.id)}
-                className="glass hero-in group p-5 text-left transition-colors duration-500 hover:border-white/[0.18]"
+                className="glass relative hero-in group p-5 text-left transition-colors duration-500 hover:border-white/[0.18]"
                 style={delay(440 + i * 70)}
               >
                 <div className="flex items-center justify-between">

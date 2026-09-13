@@ -37,7 +37,7 @@ export function SecurityGrid() {
             <Reveal key={item.title} delay={(i % 2) * 90}>
               <article
                 onPointerMove={spotlight}
-                className="element-card glass group h-full overflow-hidden p-7 transition-colors duration-500 hover:border-white/[0.16]"
+                className="element-card glass relative group h-full overflow-hidden p-7 transition-colors duration-500 hover:border-white/[0.16]"
               >
                 <div className="relative grid h-11 w-11 place-items-center rounded-xl border border-white/[0.1] bg-white/[0.04] text-[color:var(--ink)]">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
