@@ -11,6 +11,14 @@
 // can.
 import '@rainbow-me/rainbowkit/styles.css'
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
+import {
+  safeWallet,
+  rainbowWallet,
+  baseAccount,
+  metaMaskWallet,
+  trustWallet,
+  walletConnectWallet,
+} from '@rainbow-me/rainbowkit/wallets'
 import { http, createConfig } from 'wagmi'
 import { defineChain } from 'viem'
 import { injected } from 'wagmi/connectors'
@@ -68,6 +76,19 @@ export function buildConfig(chains: ChainInfo[]) {
     transports,
     appIcon: `${appUrl}/android-chrome-192x192.png`,
     appDescription: 'Universal Cross-Chain Intent & Execution Platform',
+    // RainbowKit's own default list (Safe/Rainbow/Coinbase/MetaMask/generic
+    // WalletConnect) has no dedicated entry for Trust Wallet, so tapping it
+    // fell through to the generic WalletConnect-explorer-driven picker
+    // instead of RainbowKit's own tested deep link for it
+    // (trust://wc?uri=...), which is what actually hung on mobile. Adding it
+    // explicitly gives it the same reliable, wallet-specific deep-linking
+    // MetaMask already has.
+    wallets: [
+      {
+        groupName: 'Popular',
+        wallets: [safeWallet, rainbowWallet, baseAccount, metaMaskWallet, trustWallet, walletConnectWallet],
+      },
+    ],
   })
 }
 
