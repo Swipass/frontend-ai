@@ -66,12 +66,27 @@ export function useWallet() {
       }
     }
 
+    // wagmi's WalletConnect connector only starts a fresh pairing (the thing
+    // that triggers "open in app") when its underlying provider has no
+    // session yet. An attempt that gets interrupted before the wallet app
+    // approves it -- e.g. the phone had nothing installed to hand the link
+    // off to, or the user backgrounded the tab -- can still leave a session
+    // object in place, so every retry after that silently tries to reuse a
+    // pairing that was never actually approved instead of prompting again.
+    // Disconnecting first clears that out; it is a no-op when there was
+    // nothing to clear.
+    await Promise.all(
+      connectors
+        .filter(c => c.type === 'walletConnect')
+        .map(c => disconnectAsync({ connector: c }).catch(() => {}))
+    )
+
     if (openConnectModal) {
       openConnectModal()
     } else {
       toast.error('Wallet connection is still loading, try again in a moment')
     }
-  }, [connectors, connectAsync, openConnectModal])
+  }, [connectors, connectAsync, disconnectAsync, openConnectModal])
 
   const disconnectWallet = useCallback(async () => {
     await disconnectAsync().catch(() => {})
