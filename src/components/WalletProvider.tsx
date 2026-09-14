@@ -9,11 +9,12 @@
 // The resolved chain list is cached in the browser, so a return visit configures
 // the wallet instantly and still works through a brief backend hiccup. The cache
 // is a copy of what the backend last said, never a substitute for asking.
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { WagmiProvider } from 'wagmi'
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
 import { buildConfig } from '../config/wagmi'
 import { intentService, ChainInfo } from '../services/intentService'
+import { useWalletStore } from '../store/walletStore'
 
 // connectWallet (useWallet.ts) now opens RainbowKit's own connect modal for
 // any non-injected wallet, so it has to look like it belongs on Swipass
@@ -63,6 +64,8 @@ function Centered({ children }: { children: ReactNode }) {
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<ReturnType<typeof buildConfig> | null>(null)
   const [failed, setFailed] = useState(false)
+  const chainsRef = useRef<ChainInfo[] | null>(null)
+  const connectionResetToken = useWalletStore(s => s.connectionResetToken)
 
   useEffect(() => {
     let cancelled = false
@@ -70,6 +73,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // Show the cached chains immediately, then reconcile with the backend.
     const cached = readCache()
     if (cached) {
+      chainsRef.current = cached
       try {
         setConfig(buildConfig(cached))
       } catch {
@@ -82,6 +86,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       .then(chains => {
         if (cancelled || chains.length === 0) return
         writeCache(chains)
+        chainsRef.current = chains
         // buildConfig() always mints a brand-new WagmiConfig (new connector
         // instances), which replaces the one WagmiProvider renders with.
         // Rebuilding here unconditionally -- even when the fetched chains
@@ -101,6 +106,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       cancelled = true
     }
   }, [])
+
+  // A stalled WalletConnect-backed connector (see useWallet.ts's watchdog)
+  // has no way to recover itself -- its provider is cached in a closure
+  // with no external reset. Rebuilding the config here, on request, mints
+  // fresh connectors from scratch so the next attempt isn't stuck reusing
+  // one that already proved dead. Skip on the initial render (token starts
+  // at 0, and the mount effect above already builds the first config).
+  const isInitialMount = useRef(true)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+    if (!chainsRef.current) return
+    setConfig(buildConfig(chainsRef.current))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectionResetToken])
 
   if (failed) {
     return (

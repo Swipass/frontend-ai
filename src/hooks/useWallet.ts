@@ -55,10 +55,20 @@ export function useWallet() {
   const { connectAsync, connectors, status: connectStatus, error: connectError, reset: resetConnect } = useConnect()
   const { disconnectAsync } = useDisconnect()
   const { openConnectModal } = useConnectModal()
-  const { connect: storeConnect, disconnect: storeDisconnect, setBalance, setChain } = useWalletStore()
+  const {
+    connect: storeConnect,
+    disconnect: storeDisconnect,
+    setBalance,
+    setChain,
+    requestConnectionReset,
+  } = useWalletStore()
 
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Whether the most recent failure was a timeout, meaning the connector's
+  // EthereumProvider is now permanently stuck for the rest of this page's
+  // life (see the reload note on the "Try again" path below).
+  const staleAfterTimeoutRef = useRef(false)
 
   const clearWatchdog = useCallback(() => {
     if (timeoutRef.current) {
@@ -80,11 +90,31 @@ export function useWallet() {
       timeoutRef.current = setTimeout(() => {
         logWallet('connection error: timed out waiting for wallet response')
         setConnectionError('Connection taking longer than expected')
-        // Tear down whatever the stalled attempt left behind so the next
-        // wallet the user picks -- same one or a different one -- starts
-        // clean instead of inheriting a half-open connector.
-        disconnectAsync().catch(() => {})
+        staleAfterTimeoutRef.current = true
         resetConnect()
+        // Deliberately NOT calling disconnectAsync() here. wagmi's
+        // WalletConnect connector caches its EthereumProvider in a closure
+        // with no external reset -- calling disconnect() on a connector
+        // whose init already stalled tears down the transport without ever
+        // re-initializing it, leaving it permanently dead rather than
+        // recoverable. That's the exact failure this codebase already hit
+        // and reverted once (see the comment above on the removed
+        // disconnect-before-connect call).
+        //
+        // requestConnectionReset() rebuilds the wagmi config with fresh
+        // connector instances, which is correct and necessary if the chain
+        // list changes underneath -- but it does NOT fix a stalled
+        // WalletConnect-backed wallet: RainbowKit caches the actual
+        // walletConnect() provider closure for every non-generic wallet
+        // (Safe/Rainbow/MetaMask/Trust Wallet all share one) in a
+        // module-scoped Map that lives for the page's entire lifetime,
+        // completely independent of which wagmi config is currently
+        // mounted. Once that shared provider's init has stalled, every one
+        // of those wallets is dead until the page reloads; there is no
+        // public API to clear that cache. So on the *next* connect
+        // attempt after a timeout, we reload instead of retrying in place
+        // -- see connectWallet below.
+        requestConnectionReset()
         // And actually get the stuck "connecting..." screen off the user's
         // screen -- see dismissRainbowKitModal for why this is necessary.
         dismissRainbowKitModal()
@@ -110,7 +140,7 @@ export function useWallet() {
         setConnectionError('Connection failed')
       }
     }
-  }, [connectStatus, connectError, activeConnector, clearWatchdog, disconnectAsync, resetConnect])
+  }, [connectStatus, connectError, activeConnector, clearWatchdog, resetConnect, requestConnectionReset])
 
   useEffect(() => clearWatchdog, [clearWatchdog])
 
@@ -128,6 +158,18 @@ export function useWallet() {
 
   // 🔥 The magic: one connect function that works everywhere
   const connectWallet = useCallback(async () => {
+    // A timed-out attempt leaves every WalletConnect-backed wallet in the
+    // list (Safe/Rainbow/MetaMask/Trust Wallet all share one cached
+    // provider closure inside RainbowKit, module-scoped for the page's
+    // whole life) permanently stuck -- see the long comment on the
+    // timeout branch above. There is no in-page way to clear that, so
+    // "Try again" after a timeout means reload, not reconnect.
+    if (staleAfterTimeoutRef.current) {
+      logWallet('reloading to clear a stalled wallet connector')
+      window.location.reload()
+      return
+    }
+
     // A fresh attempt should never carry a stale "taking longer than
     // expected" banner from a previous failed one, and shouldn't be blocked
     // by the watchdog left running for a wallet the user is no longer
