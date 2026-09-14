@@ -1,5 +1,5 @@
 // src/hooks/useWallet.ts
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import {
   useAccount,
   useBalance,
@@ -16,14 +16,103 @@ const chainNameMap: Record<number, string> = {
   137: 'Polygon', 43114: 'Avalanche', 56: 'BNB Chain', 100: 'Gnosis',
 }
 
+function logWallet(message: string) {
+  // eslint-disable-next-line no-console
+  console.log(`[WALLET] ${message}`)
+}
+
+// Bounds how long we wait for a WalletConnect-backed connector (the only
+// path mobile ever takes, since there is no injected provider there) to
+// settle. Nothing upstream -- not wagmi, not RainbowKit's own modal --
+// enforces a ceiling on that promise: if the relay/project the connector
+// talks to never responds, `connect()` simply never resolves or rejects,
+// and the UI sits in "connecting" forever with no error surfaced. This is
+// a recovery net, not the fix for why the promise stalls in the first
+// place -- see the connector-selection comments below for that.
+const CONNECT_TIMEOUT_MS = 45_000
+
+function isMobileEnvironment() {
+  return typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
+// RainbowKit's own connect modal has no public API to close it -- the
+// "connecting to X..." screen is entirely internal state, not derived from
+// wagmi's connect status, so resetting our own state does nothing to it.
+// It does listen globally for Escape and close itself on it (that's how it
+// implements the documented close-on-Escape behaviour), which is the only
+// externally reachable way to dismiss it. Without this, a timed-out
+// connection leaves the user staring at RainbowKit's own stuck spinner
+// forever, with our recovery UI rendered uselessly behind it.
+function dismissRainbowKitModal() {
+  if (typeof document === 'undefined') return
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+}
+
 export function useWallet() {
-  const { address, isConnected, chainId, chain } = useAccount()
+  const { address, isConnected, chainId, chain, connector: activeConnector } = useAccount()
   const { data: balanceData } = useBalance({ address })
   const { switchChainAsync } = useSwitchChain()
-  const { connectAsync, connectors } = useConnect()
+  const { connectAsync, connectors, status: connectStatus, error: connectError, reset: resetConnect } = useConnect()
   const { disconnectAsync } = useDisconnect()
   const { openConnectModal } = useConnectModal()
   const { connect: storeConnect, disconnect: storeDisconnect, setBalance, setChain } = useWalletStore()
+
+  const [connectionError, setConnectionError] = useState<string | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearWatchdog = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+  }, [])
+
+  // Bounded connection lifecycle: idle -> connecting -> connected | failed.
+  // wagmi's connect mutation status is shared across every `useConnect()`
+  // instance on the same config (RainbowKit's own modal calls `connectAsync`
+  // internally, not this hook), so watching it here observes the real
+  // outcome of a wallet tapped inside RainbowKit's picker, not just our own
+  // direct calls.
+  useEffect(() => {
+    if (connectStatus === 'pending') {
+      logWallet('connection request dispatched')
+      clearWatchdog()
+      timeoutRef.current = setTimeout(() => {
+        logWallet('connection error: timed out waiting for wallet response')
+        setConnectionError('Connection taking longer than expected')
+        // Tear down whatever the stalled attempt left behind so the next
+        // wallet the user picks -- same one or a different one -- starts
+        // clean instead of inheriting a half-open connector.
+        disconnectAsync().catch(() => {})
+        resetConnect()
+        // And actually get the stuck "connecting..." screen off the user's
+        // screen -- see dismissRainbowKitModal for why this is necessary.
+        dismissRainbowKitModal()
+      }, CONNECT_TIMEOUT_MS)
+      return
+    }
+
+    clearWatchdog()
+
+    if (connectStatus === 'success') {
+      logWallet(`connection resolved${activeConnector ? ` (connector: ${activeConnector.id})` : ''}`)
+      setConnectionError(null)
+    } else if (connectStatus === 'error') {
+      const isRejection =
+        connectError?.name === 'UserRejectedRequestError' ||
+        /reject|denied|cancel/i.test(connectError?.message || '')
+      if (isRejection) {
+        logWallet('connection rejected')
+        setConnectionError(null) // user cancelling is not a failure state to surface
+      } else {
+        const safeMessage = connectError?.message?.slice(0, 200) || 'unknown error'
+        logWallet(`connection error: ${safeMessage}`)
+        setConnectionError('Connection failed')
+      }
+    }
+  }, [connectStatus, connectError, activeConnector, clearWatchdog, disconnectAsync, resetConnect])
+
+  useEffect(() => clearWatchdog, [clearWatchdog])
 
   // Keep store in sync
   useEffect(() => {
@@ -39,6 +128,15 @@ export function useWallet() {
 
   // 🔥 The magic: one connect function that works everywhere
   const connectWallet = useCallback(async () => {
+    // A fresh attempt should never carry a stale "taking longer than
+    // expected" banner from a previous failed one, and shouldn't be blocked
+    // by the watchdog left running for a wallet the user is no longer
+    // waiting on.
+    setConnectionError(null)
+    clearWatchdog()
+    logWallet('connection requested')
+    logWallet(`mobile environment ${isMobileEnvironment() ? 'detected' : 'not detected'}`)
+
     // With no WalletConnect project id, buildConfig falls back to a bare
     // injected() connector (type "injected"). With one configured, it uses
     // RainbowKit's default wallet list instead, where MetaMask gets its own
@@ -97,11 +195,14 @@ export function useWallet() {
     } else {
       toast.error('Wallet connection is still loading, try again in a moment')
     }
-  }, [connectors, connectAsync, openConnectModal])
+  }, [connectors, connectAsync, openConnectModal, clearWatchdog])
 
   const disconnectWallet = useCallback(async () => {
+    clearWatchdog()
+    setConnectionError(null)
+    resetConnect()
     await disconnectAsync().catch(() => {})
-  }, [disconnectAsync])
+  }, [disconnectAsync, clearWatchdog, resetConnect])
 
   return {
     address,
@@ -112,5 +213,7 @@ export function useWallet() {
     connect: connectWallet,
     disconnect: disconnectWallet,
     switchChainAsync,
+    isConnecting: connectStatus === 'pending',
+    connectionError,
   }
 }

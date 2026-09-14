@@ -8,6 +8,8 @@ interface WalletPanelContentProps {
   chainName: string
   connect: () => void
   disconnect: () => void
+  isConnecting?: boolean
+  connectionError?: string | null
 }
 
 export function WalletPanelContent({
@@ -17,6 +19,8 @@ export function WalletPanelContent({
   chainName,
   connect,
   disconnect,
+  isConnecting,
+  connectionError,
 }: WalletPanelContentProps) {
   if (!isConnected) {
     return (
@@ -24,9 +28,22 @@ export function WalletPanelContent({
         <p className="m-0 text-[0.88rem] leading-relaxed text-[color:var(--ink-3)]">
           Connect a wallet to start executing cross-chain transactions. No account required.
         </p>
-        <button type="button" onClick={connect} className="pill pill-light h-12 w-full">
-          Connect wallet
+        <button
+          type="button"
+          onClick={connect}
+          disabled={isConnecting}
+          className="pill pill-light h-12 w-full disabled:opacity-60"
+        >
+          {isConnecting ? 'Connecting...' : 'Connect wallet'}
         </button>
+        {connectionError && (
+          <div className="flex flex-col gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-3 text-[0.78rem] leading-relaxed text-[color:var(--ink-3)]">
+            <span>{connectionError}</span>
+            <button type="button" onClick={connect} className="self-start text-[0.78rem] font-medium text-[color:var(--ink)] underline underline-offset-2">
+              Try again
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2.5 rounded-2xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-3 text-[0.78rem] leading-relaxed text-[color:var(--ink-3)]">
           <span className="shrink-0">
             <Icon.Shield size={14} />

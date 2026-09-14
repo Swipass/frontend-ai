@@ -44,8 +44,18 @@ function logTx(message: string) {
 export function useIntentExecution() {
   const { commandHistory: sessionCommands, addCommand, updateCommand } = useAppStore()
   const [walletHistory, setWalletHistory] = useState<any[]>([])
-  const { address, isConnected, chainName, balance, chainId, connect, disconnect, switchChainAsync } =
-    useWallet()
+  const {
+    address,
+    isConnected,
+    chainName,
+    balance,
+    chainId,
+    connect,
+    disconnect,
+    switchChainAsync,
+    isConnecting,
+    connectionError,
+  } = useWallet()
 
   const [command, setCommand] = useState('')
   const [loading, setLoading] = useState(false)
@@ -698,6 +708,8 @@ export function useIntentExecution() {
     balance,
     connect,
     disconnect,
+    isConnecting,
+    connectionError,
     command,
     setCommand,
     textareaRef,

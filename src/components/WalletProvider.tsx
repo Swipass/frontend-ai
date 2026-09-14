@@ -38,6 +38,12 @@ function readCache(): ChainInfo[] | null {
   }
 }
 
+function sameChainSet(a: ChainInfo[], b: ChainInfo[]): boolean {
+  if (a.length !== b.length) return false
+  const ids = new Set(a.map(c => c.chain_id))
+  return b.every(c => ids.has(c.chain_id))
+}
+
 function writeCache(chains: ChainInfo[]) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(chains))
@@ -76,7 +82,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       .then(chains => {
         if (cancelled || chains.length === 0) return
         writeCache(chains)
-        setConfig(buildConfig(chains))
+        // buildConfig() always mints a brand-new WagmiConfig (new connector
+        // instances), which replaces the one WagmiProvider renders with.
+        // Rebuilding here unconditionally -- even when the fetched chains
+        // are the same set the cache already produced -- would silently
+        // swap the connector a user's in-flight wallet connection is
+        // running against, orphaning it with no error. Only rebuild when
+        // the chain set actually changed.
+        if (!cached || !sameChainSet(cached, chains)) {
+          setConfig(buildConfig(chains))
+        }
       })
       .catch(() => {
         if (!cancelled && !cached) setFailed(true)

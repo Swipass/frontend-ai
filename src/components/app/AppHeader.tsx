@@ -24,6 +24,7 @@ export function AppHeader({ ctx }: AppHeaderProps) {
     address,
     connect,
     disconnect,
+    isConnecting,
     displayChains,
     fromChainIdx,
     handleNetworkSwitch,
@@ -103,14 +104,17 @@ export function AppHeader({ ctx }: AppHeaderProps) {
         <button
           type="button"
           onClick={isConnected ? disconnect : connect}
+          disabled={!isConnected && isConnecting}
           title={isConnected ? 'Disconnect wallet' : undefined}
-          className={`pill h-10 ${isConnected ? 'pill-dark f-mono text-[0.8rem]' : 'pill-light'}`}
+          className={`pill h-10 ${isConnected ? 'pill-dark f-mono text-[0.8rem]' : 'pill-light'} disabled:opacity-60`}
         >
           {isConnected ? (
             <>
               <PulseDot connected />
               {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
             </>
+          ) : isConnecting ? (
+            'Connecting...'
           ) : (
             'Connect wallet'
           )}

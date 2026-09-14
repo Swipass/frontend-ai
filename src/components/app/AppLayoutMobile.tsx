@@ -28,6 +28,8 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
     chainName,
     connect,
     disconnect,
+    isConnecting,
+    connectionError,
     displayChains,
     fromChainIdx,
     handleNetworkSwitch,
@@ -191,6 +193,8 @@ export function AppLayoutMobile({ ctx }: AppLayoutMobileProps) {
           chainName={chainName}
           connect={connect}
           disconnect={disconnect}
+          isConnecting={isConnecting}
+          connectionError={connectionError}
         />
       </BottomSheet>
 

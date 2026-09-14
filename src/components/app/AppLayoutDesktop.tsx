@@ -47,6 +47,8 @@ export function AppLayoutDesktop({ ctx }: AppLayoutDesktopProps) {
     chainName,
     connect,
     disconnect,
+    isConnecting,
+    connectionError,
     isSending,
     handleConfirm,
     approval,
@@ -149,6 +151,8 @@ export function AppLayoutDesktop({ ctx }: AppLayoutDesktopProps) {
             chainName={chainName}
             connect={connect}
             disconnect={disconnect}
+            isConnecting={isConnecting}
+            connectionError={connectionError}
           />
         </div>
         <PanelHeading title="Transaction preview" />
